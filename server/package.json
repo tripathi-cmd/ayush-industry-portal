@@ -1,0 +1,20 @@
+{
+  "name": "ayush-portal-server",
+  "version": "1.0.0",
+  "description": "Ministry of Ayush - Industry Partnership Portal Backend API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.9.5",
+    "multer": "^1.4.5-lts.1"
+  }
+}

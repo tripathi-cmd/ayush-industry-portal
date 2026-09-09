@@ -1,0 +1,491 @@
+{
+  "users": [
+    {
+      "id": "usr_student_1",
+      "email": "student@ayush.gov.in",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.g4S6LsC1XoT8DUbM9kq7rdbuVT190Q.",
+      "role": "student",
+      "name": "Dr. Ananya Sharma",
+      "stream": "ayurveda",
+      "degree": "BAMS (Final Year)",
+      "institution": "National Institute of Ayurveda (NIA), Jaipur",
+      "phone": "+91 98765 43210",
+      "location": "Jaipur, Rajasthan",
+      "bio": "Aspiring Ayurvedic physician with clinical interests in Panchakarma procedures, Dravyaguna research, and evidence-based herbal formulations.",
+      "skills": [
+        "Panchakarma Procedures",
+        "Nadi Pariksha (Pulse Diagnosis)",
+        "Dravyaguna (Pharmacognosy)",
+        "Charaka Samhita Protocols",
+        "Clinical Case Documentation",
+        "Ayurvedic Dietetics (Pathya-Apathya)"
+      ],
+      "assessmentScores": [
+        {
+          "assessmentId": "asm_ayurveda_1",
+          "stream": "ayurveda",
+          "title": "Ayurveda Clinical & Pharmacognosy Competency",
+          "score": 100,
+          "passed": true,
+          "badge": "Certified Ayurveda Specialist",
+          "completedAt": "2026-09-09T16:41:29.771Z"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc_1",
+          "title": "BAMS Provisional Registration & Marks Transcript",
+          "type": "Academic Certificate",
+          "status": "verified",
+          "verifiedAt": "2026-08-20"
+        }
+      ],
+      "createdAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "usr_industry_1",
+      "email": "recruiter@dabur.com",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.g4S6LsC1XoT8DUbM9kq7rdbuVT190Q.",
+      "role": "industry",
+      "companyName": "Dabur Research & Development Centre",
+      "ayushSector": "ayurveda",
+      "contactPerson": "Rajeev Singhania (Head of Academic Partnerships)",
+      "phone": "+91 98112 34567",
+      "location": "Ghaziabad, Uttar Pradesh",
+      "website": "https://www.dabur.com/research",
+      "licenseNumber": "AYUSH-DL-UP-2019-9482",
+      "gmpCertified": true,
+      "verificationStatus": "verified",
+      "verifiedAt": "2026-07-15",
+      "about": "Premier research arm of Dabur India Ltd, focusing on classical Ayurvedic drug discovery, standardisation, toxicology, and clinical documentation.",
+      "createdAt": "2026-07-10T00:00:00.000Z"
+    },
+    {
+      "id": "usr_industry_2",
+      "email": "partnerships@aryavaidyasala.com",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.g4S6LsC1XoT8DUbM9kq7rdbuVT190Q.",
+      "role": "industry",
+      "companyName": "Arya Vaidya Sala, Kottakkal",
+      "ayushSector": "ayurveda",
+      "contactPerson": "Dr. P. Madhavan",
+      "phone": "+91 483 2742216",
+      "location": "Kottakkal, Malappuram, Kerala",
+      "website": "https://www.aryavaidyasala.com",
+      "licenseNumber": "AYUSH-KL-GMP-83719",
+      "gmpCertified": true,
+      "verificationStatus": "verified",
+      "verifiedAt": "2026-07-18",
+      "about": "Century-old charitable Ayurvedic institution renowned for authentic classical treatments, Panchakarma hospitals, and medicine manufacturing.",
+      "createdAt": "2026-07-12T00:00:00.000Z"
+    },
+    {
+      "id": "usr_industry_3",
+      "email": "research@svyasa.edu.in",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.g4S6LsC1XoT8DUbM9kq7rdbuVT190Q.",
+      "role": "industry",
+      "companyName": "S-VYASA Yoga University & Health Care",
+      "ayushSector": "yoga_naturopathy",
+      "contactPerson": "Prof. Gayatri Ramanathan",
+      "phone": "+91 80 2263 9999",
+      "location": "Bengaluru, Karnataka",
+      "website": "https://svyasa.edu.in",
+      "licenseNumber": "AYUSH-KA-YOGA-1029",
+      "gmpCertified": true,
+      "verificationStatus": "verified",
+      "verifiedAt": "2026-07-20",
+      "about": "Deemed-to-be-University pioneering scientific research in Yoga, Naturopathic therapies, and non-communicable disease reversal.",
+      "createdAt": "2026-07-15T00:00:00.000Z"
+    },
+    {
+      "id": "usr_industry_4",
+      "email": "hr@patanjaliresearch.com",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.g4S6LsC1XoT8DUbM9kq7rdbuVT190Q.",
+      "role": "industry",
+      "companyName": "Patanjali Research Foundation Trust",
+      "ayushSector": "ayurveda",
+      "contactPerson": "Vikram Malhotra",
+      "phone": "+91 1334 240008",
+      "location": "Haridwar, Uttarakhand",
+      "website": "https://patanjali.res.in",
+      "licenseNumber": "AYUSH-UK-GMP-44912",
+      "gmpCertified": true,
+      "verificationStatus": "pending",
+      "about": "Dedicated research institute conducting scientific validation of Ayurvedic herbal compounds and traditional formulations.",
+      "createdAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "usr_admin_1",
+      "email": "admin@ayush.gov.in",
+      "password": "$2b$10$xYk19pUPOpMCmlVlF.Xmm.VxTyD08QXfVWWRNEunDvQnuqwUchIEi",
+      "role": "admin",
+      "name": "Ministry Verification Directorate",
+      "department": "Ayush Academia-Industry Collaborative Cell",
+      "officialId": "GOI-AYUSH-ADM-042",
+      "createdAt": "2026-06-01T00:00:00.000Z"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "opp_1788972089848",
+      "postedBy": "usr_industry_1",
+      "companyName": "Dabur Research & Development Centre",
+      "title": "Ayurvedic Drug Standardization & HPTLC Analyst",
+      "stream": "ayurveda",
+      "type": "Research Fellowship",
+      "location": "Sahibabad R&D Lab",
+      "stipend": "₹26,000 / month",
+      "duration": "6 Months",
+      "openings": 2,
+      "status": "approved",
+      "requiredSkills": [
+        "Dravyaguna (Pharmacognosy)",
+        "Classical Herb Identification",
+        "Rasa Shastra & Bhaishajya Kalpana"
+      ],
+      "description": "Perform fingerprinting of Ayurvedic herbal extracts using high-performance thin layer chromatography.",
+      "eligibility": "Graduates / Final Year Students",
+      "postedAt": "2026-09-09T16:41:29.848Z"
+    },
+    {
+      "id": "opp_1",
+      "postedBy": "usr_industry_1",
+      "companyName": "Dabur Research & Development Centre",
+      "title": "Clinical Research & Pharmacognosy Fellow",
+      "stream": "ayurveda",
+      "type": "Internship (Full-Time)",
+      "location": "Ghaziabad / Delhi NCR (On-site)",
+      "stipend": "₹25,000 / month",
+      "duration": "6 Months",
+      "openings": 4,
+      "status": "approved",
+      "requiredSkills": [
+        "Dravyaguna (Pharmacognosy)",
+        "Clinical Case Documentation",
+        "Classical Herb Identification",
+        "Rasa Shastra & Bhaishajya Kalpana"
+      ],
+      "description": "Join Dabur's core research laboratory to evaluate traditional Ayurvedic formulations. Hands-on exposure to thin-layer chromatography, phytochemical screening, and clinical data registry adhering to Ministry of Ayush ethical standards.",
+      "eligibility": "BAMS Final Year or MD (Ayurveda) candidates with foundational knowledge of classical texts and pharmacological analysis.",
+      "postedAt": "2026-08-10T00:00:00.000Z"
+    },
+    {
+      "id": "opp_2",
+      "postedBy": "usr_industry_2",
+      "companyName": "Arya Vaidya Sala, Kottakkal",
+      "title": "Panchakarma Clinical Resident Trainee",
+      "stream": "ayurveda",
+      "type": "Internship (Hospital-Based)",
+      "location": "Kottakkal, Kerala",
+      "stipend": "₹22,000 / month + Accommodation",
+      "duration": "6 Months",
+      "openings": 6,
+      "status": "approved",
+      "requiredSkills": [
+        "Panchakarma Procedures",
+        "Nadi Pariksha (Pulse Diagnosis)",
+        "Charaka Samhita Protocols",
+        "Ayurvedic Dietetics (Pathya-Apathya)"
+      ],
+      "description": "Intensive clinical immersion under senior Vaidyas at Kottakkal hospital. Trainees will supervise Purvakarma, Pradhanakarma (Vamana, Virechana, Vasti), and Paschatkarma dietary regimens.",
+      "eligibility": "BAMS Graduates / Interns holding provisional registration.",
+      "postedAt": "2026-08-15T00:00:00.000Z"
+    },
+    {
+      "id": "opp_3",
+      "postedBy": "usr_industry_3",
+      "companyName": "S-VYASA Yoga University & Health Care",
+      "title": "Integrative Yoga Therapy Specialist",
+      "stream": "yoga_naturopathy",
+      "type": "Fellowship (Clinical)",
+      "location": "Bengaluru, Karnataka",
+      "stipend": "₹20,000 / month",
+      "duration": "3 Months",
+      "openings": 3,
+      "status": "approved",
+      "requiredSkills": [
+        "Therapeutic Asana Alignment",
+        "Pranayama & Kriya Protocols",
+        "Yoga Nidra & Stress Management",
+        "Physiological Assessment of Vital Signs"
+      ],
+      "description": "Work alongside physicians administering evidence-backed Yoga therapy protocols for metabolic syndrome, hypertension, and autoimmune recovery at Prashanti Kuteeram campus.",
+      "eligibility": "BNYS or M.Sc Yoga Therapy students.",
+      "postedAt": "2026-08-18T00:00:00.000Z"
+    },
+    {
+      "id": "opp_4",
+      "postedBy": "usr_industry_1",
+      "companyName": "Dabur Research & Development Centre",
+      "title": "Ayurvedic Formulation & GMP Quality Associate",
+      "stream": "ayurveda",
+      "type": "Placement (Pre-Placement Offer)",
+      "location": "Sahibabad, UP",
+      "stipend": "₹30,000 / month (PPO CTC ₹5.5 LPA)",
+      "duration": "6 Months",
+      "openings": 2,
+      "status": "approved",
+      "requiredSkills": [
+        "GMP Compliance in Ayurvedic Drug Manufacturing",
+        "Rasa Shastra & Bhaishajya Kalpana",
+        "Dravyaguna (Pharmacognosy)"
+      ],
+      "description": "Assist Quality Assurance leads in standardization of Asava-Arishta, Bhasma, and herbal tablets ensuring Schedule T (GMP) compliance.",
+      "eligibility": "BAMS / B.Pharm (Ayurveda) / M.Sc Pharmacognosy.",
+      "postedAt": "2026-08-22T00:00:00.000Z"
+    },
+    {
+      "id": "opp_5",
+      "postedBy": "usr_industry_4",
+      "companyName": "Patanjali Research Foundation Trust",
+      "title": "Herbal Bio-Activity & Botanical QC Researcher",
+      "stream": "ayurveda",
+      "type": "Research Internship",
+      "location": "Haridwar, Uttarakhand",
+      "stipend": "₹24,000 / month",
+      "duration": "6 Months",
+      "openings": 5,
+      "status": "pending",
+      "requiredSkills": [
+        "Classical Herb Identification",
+        "Dravyaguna (Pharmacognosy)",
+        "Clinical Case Documentation"
+      ],
+      "description": "High-throughput screening of Himalayan medicinal botanicals for anti-inflammatory properties.",
+      "eligibility": "Final year BAMS or post-graduates in Dravyaguna.",
+      "postedAt": "2026-09-02T00:00:00.000Z"
+    }
+  ],
+  "applications": [
+    {
+      "id": "app_1",
+      "opportunityId": "opp_1",
+      "studentId": "usr_student_1",
+      "studentName": "Dr. Ananya Sharma",
+      "studentEmail": "student@ayush.gov.in",
+      "studentDegree": "BAMS (Final Year)",
+      "companyName": "Dabur Research & Development Centre",
+      "opportunityTitle": "Clinical Research & Pharmacognosy Fellow",
+      "matchScore": 92,
+      "matchingSkills": [
+        "Dravyaguna (Pharmacognosy)",
+        "Clinical Case Documentation"
+      ],
+      "missingSkills": [
+        "Classical Herb Identification",
+        "Rasa Shastra & Bhaishajya Kalpana"
+      ],
+      "status": "shortlisted",
+      "appliedAt": "2026-08-16T11:00:00.000Z",
+      "interviewDetails": {
+        "dateTime": "2026-09-15T14:30:00+05:30",
+        "interviewer": "Dr. Singhania, Head of R&D",
+        "meetingLink": "https://meet.jit.si/Ayush-Partnership-Dabur-Ananya",
+        "notes": "Please prepare a 5-minute presentation on your final year Dravyaguna project."
+      }
+    },
+    {
+      "id": "app_2",
+      "opportunityId": "opp_2",
+      "studentId": "usr_student_1",
+      "studentName": "Dr. Ananya Sharma",
+      "studentEmail": "student@ayush.gov.in",
+      "studentDegree": "BAMS (Final Year)",
+      "companyName": "Arya Vaidya Sala, Kottakkal",
+      "opportunityTitle": "Panchakarma Clinical Resident Trainee",
+      "matchScore": 95,
+      "matchingSkills": [
+        "Panchakarma Procedures",
+        "Nadi Pariksha (Pulse Diagnosis)",
+        "Charaka Samhita Protocols",
+        "Ayurvedic Dietetics (Pathya-Apathya)"
+      ],
+      "missingSkills": [],
+      "status": "interview_scheduled",
+      "appliedAt": "2026-08-20T14:20:00.000Z",
+      "interviewDetails": {
+        "dateTime": "2026-09-12T11:00:00+05:30",
+        "interviewer": "Dr. P. Madhavan (Chief Physician)",
+        "meetingLink": "https://meet.jit.si/Ayush-Kottakkal-Panchakarma-Review",
+        "notes": "Case study evaluation on Snehana-Swedana protocols."
+      }
+    }
+  ],
+  "assessments": [
+    {
+      "id": "asm_ayurveda_1",
+      "stream": "ayurveda",
+      "title": "Ayurveda Clinical & Pharmacognosy Competency",
+      "durationMinutes": 15,
+      "passingScore": 70,
+      "description": "Official Ministry of Ayush standardized assessment assessing Charaka Samhita diagnostics, Dravyaguna properties (Rasa, Guna, Virya, Vipaka), and Panchakarma execution protocols.",
+      "questions": [
+        {
+          "id": 1,
+          "question": "Which Panchakarma procedure is indicated as the prime therapy for aggravated Pitta Dosha?",
+          "options": [
+            "Vamana (Therapeutic emesis)",
+            "Virechana (Therapeutic purgation)",
+            "Basti (Medicated enema)",
+            "Nasya (Nasal administration)"
+          ],
+          "correctAnswer": 1,
+          "rationale": "According to Charaka Samhita, Virechana is the supreme therapy for eliminating Pitta from its root seat (Amashaya/Grahani)."
+        },
+        {
+          "id": 2,
+          "question": "In Dravyaguna, what is the Vipaka of Madhura (Sweet) Rasa predominantly?",
+          "options": [
+            "Madhura",
+            "Amla",
+            "Katu",
+            "Tikta"
+          ],
+          "correctAnswer": 0,
+          "rationale": "Substances with Madhura and Lavana rasa generally undergo Madhura Vipaka after digestion."
+        },
+        {
+          "id": 3,
+          "question": "Which classical formulation type requires Schedule T (GMP) fermentation monitoring for self-generated alcohol content?",
+          "options": [
+            "Churna",
+            "Asava & Arishta",
+            "Taila",
+            "Bhasma"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Asavas and Arishtas are classical hydro-alcoholic preparations developed through natural Sandhana Kalpana (fermentation)."
+        },
+        {
+          "id": 4,
+          "question": "Which of the following is considered a Pradhana Snehana Dravya with optimal retention capacity?",
+          "options": [
+            "Taila (Sesame oil)",
+            "Ghrita (Clarified butter / Ghee)",
+            "Vasa (Animal fat)",
+            "Majja (Bone marrow)"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Ghrita is Samskaranuvartana (inherits qualities of herbs without losing its own), making it the superior Snehana Dravya."
+        },
+        {
+          "id": 5,
+          "question": "What is the primary diagnostic observation assessed in Nadi Pariksha for Vataja Nadi?",
+          "options": [
+            "Mandooka Gati (Frog-like hopping)",
+            "Sarpa Gati (Serpentine wavy motion)",
+            "Hamsa Gati (Graceful swan-like motion)",
+            "Kaka Gati (Crow-like jerky motion)"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Vata dominance presents as Sarpa-Jalauka Gati (serpentine, swift, curved pulse)."
+        }
+      ]
+    },
+    {
+      "id": "asm_yoga_1",
+      "stream": "yoga_naturopathy",
+      "title": "Therapeutic Yoga & Naturopathy Diagnostics",
+      "durationMinutes": 15,
+      "passingScore": 70,
+      "description": "Assesses knowledge of therapeutic asana adjustments, Shatkarma purification, hydrotherapy temperature ranges, and yogic lifestyle intervention.",
+      "questions": [
+        {
+          "id": 1,
+          "question": "Which Shatkarma technique is specifically recommended for chronic sinusitis and upper respiratory mucus clearance?",
+          "options": [
+            "Jala Neti",
+            "Nauli",
+            "Trataka",
+            "Basti"
+          ],
+          "correctAnswer": 0,
+          "rationale": "Jala Neti flushes the nasal cavity and desensitizes respiratory mucosa."
+        },
+        {
+          "id": 2,
+          "question": "In Naturopathy, what physiological response does a cold hip bath (55°F - 65°F) induce?",
+          "options": [
+            "Pelvic vasodilation and muscle relaxation",
+            "Pelvic vasoconstriction followed by reactionary hyperemia and visceral tone improvement",
+            "Severe blood pressure drop",
+            "Sudden lymphatic stasis"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Cold hydrotherapy initiates tonic vasoconstriction and invigorating reflexive blood circulation to reproductive and lower bowel organs."
+        },
+        {
+          "id": 3,
+          "question": "Which Asana is contraindicated for individuals suffering from severe lumbar disc herniation (Sciatica)?",
+          "options": [
+            "Bhujangasana (Gentle Cobra)",
+            "Paschimottanasana (Seated Forward Bend)",
+            "Shalabhasana (Locust pose)",
+            "Makarásana (Crocodile pose)"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Intense forward flexion exerts high intradiscal pressure on posterior lumbar nerve roots."
+        }
+      ]
+    },
+    {
+      "id": "asm_homeopathy_1",
+      "stream": "homeopathy",
+      "title": "Homeopathic Materia Medica & Repertorization",
+      "durationMinutes": 15,
+      "passingScore": 70,
+      "description": "Evaluates mastery in case analysis, Kent's repertory schema, Organon §153 characteristic symptoms, and potency selection.",
+      "questions": [
+        {
+          "id": 1,
+          "question": "According to Dr. Samuel Hahnemann's Organon §153, which symptoms guide the homeopath to the similimum?",
+          "options": [
+            "Common pathology symptoms shared by all patients",
+            "Strange, rare, peculiar, and characteristic symptoms",
+            "Laboratory diagnostic numbers only",
+            "Routine anatomical signs"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Organon §153 clearly dictates that more striking, singular, uncommon and peculiar symptoms correspond to the medicinal drug."
+        },
+        {
+          "id": 2,
+          "question": "Which medicine has key characteristic: 'Great thirst for small quantities of cold water at frequent intervals with extreme prostration and restlessness'?",
+          "options": [
+            "Bryonia Alba",
+            "Arsenicum Album",
+            "Pulsatilla Pratensis",
+            "Nux Vomica"
+          ],
+          "correctAnswer": 1,
+          "rationale": "Arsenicum Album exhibits classic agonizing restlessness with sipping cold water."
+        }
+      ]
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1",
+      "userId": "usr_student_1",
+      "title": "Interview Scheduled with Dabur R&D",
+      "message": "Your application for Clinical Research Fellow was shortlisted! Interview date: Sep 15, 2:30 PM.",
+      "read": false,
+      "timestamp": "2026-09-02T10:00:00.000Z"
+    },
+    {
+      "id": "notif_2",
+      "userId": "usr_student_1",
+      "title": "New Internship Matching Your Skills",
+      "message": "Arya Vaidya Sala Kottakkal posted 'Panchakarma Resident Trainee' with a 95% skill match.",
+      "read": true,
+      "timestamp": "2026-08-28T14:15:00.000Z"
+    },
+    {
+      "id": "notif_3",
+      "userId": "usr_admin_1",
+      "title": "Pending Partner Approval",
+      "message": "Patanjali Research Foundation submitted AYUSH license verification request.",
+      "read": false,
+      "timestamp": "2026-09-01T09:00:00.000Z"
+    }
+  ]
+}
