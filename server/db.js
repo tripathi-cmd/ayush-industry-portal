@@ -1,5 +1,10 @@
+import dns from 'dns';
 import pg from 'pg';
 import dotenv from 'dotenv';
+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 dotenv.config();
 

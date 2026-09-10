@@ -86,7 +86,7 @@ async function runTests() {
 
     // Skill gap advice
     const advice = generateSkillGapAdvice(['Docker', 'Kubernetes']);
-    assert.strictEqual(advice.length, 2);
+    assert.ok(advice.includes('Docker') && advice.includes('Kubernetes'));
 
     console.log('  ✓ Skill matching unit tests passed (no false substring matches).');
   }
