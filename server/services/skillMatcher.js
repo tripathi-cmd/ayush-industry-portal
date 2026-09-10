@@ -1,162 +1,104 @@
 /**
- * Ayush Sector Skill Matcher & Semantic Scoring Service
- * Provides keyword matching, Jaccard similarity, and Ayush domain ontology mapping
- * for Ayurveda, Yoga & Naturopathy, Unani, Siddha, and Homeopathy.
+ * Skill Connect – Skill Matching Service
+ * Deterministic, explainable skill-based matching using normalised exact matching.
+ * No false substring matches (e.g. "Java" will NOT match "JavaScript").
  */
 
-// Domain skill dictionaries with cross-mappings
-export const AYUSH_DOMAINS = {
-  ayurveda: {
-    name: "Ayurveda",
-    degrees: ["BAMS", "MD (Ayurveda)", "MS (Ayurveda)"],
-    coreSkills: [
-      "Panchakarma Procedures",
-      "Nadi Pariksha (Pulse Diagnosis)",
-      "Dravyaguna (Pharmacognosy)",
-      "Rasa Shastra & Bhaishajya Kalpana",
-      "Charaka Samhita Protocols",
-      "Sushruta Shalya Tantra (Surgical Traditions)",
-      "Swasthavritta (Preventive Health)",
-      "Agada Tantra (Toxicology)",
-      "Ayurvedic Dietetics (Pathya-Apathya)",
-      "Classical Herb Identification",
-      "GMP Compliance in Ayurvedic Drug Manufacturing",
-      "Clinical Case Documentation"
-    ]
-  },
-  yoga_naturopathy: {
-    name: "Yoga & Naturopathy",
-    degrees: ["BNYS", "M.Sc Yoga Therapy", "ND"],
-    coreSkills: [
-      "Therapeutic Asana Alignment",
-      "Pranayama & Kriya Protocols",
-      "Shatkarma Cleansing Techniques",
-      "Hydrotherapy & Mud Therapy",
-      "Fasting Therapy Protocols",
-      "Acupressure & Reflexology",
-      "Yoga Nidra & Stress Management",
-      "Naturopathic Diet & Nutrition",
-      "Yogic Lifestyle Counseling",
-      "Physiological Assessment of Vital Signs"
-    ]
-  },
-  unani: {
-    name: "Unani Medicine",
-    degrees: ["BUMS", "MD (Unani)"],
-    coreSkills: [
-      "Mizaj (Temperament Assessment)",
-      "Ilaj-bil-Tadbeer (Regimenal Therapy - Cupping, Hijama)",
-      "Ilaj-bil-Dawa (Pharmacotherapy)",
-      "Mufradat & Murakkabat (Formulations)",
-      "Kushta Formulation Analysis",
-      "Nabz (Pulse) & Baul (Urine) Examination",
-      "Unani Clinical Documentation"
-    ]
-  },
-  siddha: {
-    name: "Siddha Medicine",
-    degrees: ["BSMS", "MD (Siddha)"],
-    coreSkills: [
-      "Envagai Thervu (Eight-fold Examination)",
-      "Varmam Therapy Protocols",
-      "Muppu Preparation Principles",
-      "Thailam Formulation",
-      "Gunapadam (Siddha Pharmacology)",
-      "Noi Naadal (Siddha Pathology)"
-    ]
-  },
-  homeopathy: {
-    name: "Homeopathy",
-    degrees: ["BHMS", "MD (Homeopathy)"],
-    coreSkills: [
-      "Repertorization (Kent, Boenninghausen)",
-      "Materia Medica Applications",
-      "Organon of Medicine Principles",
-      "Chronic Disease Case Taking",
-      "Potentization & Pharmacy Standards",
-      "Miasmatic Evaluation"
-    ]
-  }
+/** Shared skill taxonomy – common technical and soft skills */
+export const SKILL_TAXONOMY = {
+  technical: [
+    'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin',
+    'React', 'Angular', 'Vue.js', 'Next.js', 'Node.js', 'Express', 'Django', 'Flask', 'Spring Boot',
+    'HTML', 'CSS', 'Tailwind CSS', 'Bootstrap',
+    'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Firebase',
+    'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes',
+    'Git', 'CI/CD', 'REST APIs', 'GraphQL',
+    'Machine Learning', 'Deep Learning', 'Data Analysis', 'Data Visualisation',
+    'TensorFlow', 'PyTorch', 'Pandas', 'NumPy',
+    'Figma', 'UI/UX Design', 'Adobe XD',
+    'Cybersecurity', 'Networking', 'Linux Administration',
+    'Blockchain', 'IoT', 'Embedded Systems',
+    'Mobile Development', 'Android Development', 'iOS Development', 'Flutter', 'React Native'
+  ],
+  soft: [
+    'Communication', 'Teamwork', 'Leadership', 'Problem Solving', 'Critical Thinking',
+    'Time Management', 'Adaptability', 'Creativity', 'Emotional Intelligence',
+    'Project Management', 'Presentation Skills', 'Negotiation',
+    'Conflict Resolution', 'Decision Making', 'Analytical Thinking',
+    'Attention to Detail', 'Work Ethic', 'Self-Motivation',
+    'Public Speaking', 'Technical Writing', 'Research',
+    'Customer Service', 'Collaboration', 'Strategic Planning'
+  ]
 };
 
 /**
- * Normalizes a skill string for comparison
+ * Normalises a skill string for comparison.
+ * Lowercases, collapses whitespace, removes punctuation EXCEPT dots/hashes/plus
+ * so "C++" stays "c++", "Node.js" stays "node.js", "C#" stays "c#".
  */
-function normalizeSkill(text) {
-  return (text || "")
+function normaliseSkill(text) {
+  return (text || '')
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[^a-z0-9.#+\s]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
- * Calculates match percentage between student skills and opportunity requirements
- * @param {Array<string>} studentSkills 
- * @param {Array<string>} requiredSkills 
- * @param {string} studentStream 
- * @param {string} opportunityStream 
- * @returns {Object} { matchScore: number, matchingSkills: Array, missingSkills: Array }
+ * Checks if two normalised skill strings match.
+ * Uses exact token match, NOT substring, to avoid "java" matching "javascript".
  */
-export function calculateMatchScore(studentSkills = [], requiredSkills = [], studentStream = "", opportunityStream = "") {
+function skillsMatch(studentSkill, requiredSkill) {
+  const s = normaliseSkill(studentSkill);
+  const r = normaliseSkill(requiredSkill);
+  if (!s || !r) return false;
+  // Exact match
+  return s === r;
+}
+
+/**
+ * Calculates match percentage between student skills and opportunity requirements.
+ * Returns deterministic, explainable results.
+ */
+export function calculateMatchScore(studentSkills = [], requiredSkills = []) {
   if (!requiredSkills || requiredSkills.length === 0) {
-    return { matchScore: 85, matchingSkills: [], missingSkills: [] };
+    return { matchScore: null, matchingSkills: [], missingSkills: [], message: 'No required skills specified' };
   }
 
-  const normalizedStudent = studentSkills.map(s => normalizeSkill(s));
+  if (!studentSkills || studentSkills.length === 0) {
+    return { matchScore: 0, matchingSkills: [], missingSkills: [...requiredSkills], message: 'No skills on profile' };
+  }
+
   const matchingSkills = [];
   const missingSkills = [];
 
-  // Stream compatibility weight
-  const streamMatch = !opportunityStream || 
-                      opportunityStream.toLowerCase() === "all" || 
-                      normalizeSkill(studentStream) === normalizeSkill(opportunityStream);
-
-  let matchPoints = 0;
-
-  requiredSkills.forEach(req => {
-    const normReq = normalizeSkill(req);
-    // Exact or substring match
-    const found = normalizedStudent.some(st => 
-      st === normReq || st.includes(normReq) || normReq.includes(st)
-    );
-
+  for (const req of requiredSkills) {
+    const found = studentSkills.some(st => skillsMatch(st, req));
     if (found) {
-      matchPoints += 1;
       matchingSkills.push(req);
     } else {
       missingSkills.push(req);
     }
-  });
-
-  const skillCoverage = matchPoints / requiredSkills.length;
-  // Base skill match calculation (0-100)
-  let rawScore = skillCoverage * 80; // 80% weight on skills
-
-  // Stream matching gives remaining 20%
-  if (streamMatch) {
-    rawScore += 20;
-  } else {
-    rawScore += 5; // Partial cross-disciplinary credit in Ayush
   }
 
-  const finalScore = Math.min(99, Math.max(25, Math.round(rawScore)));
+  const coverage = matchingSkills.length / requiredSkills.length;
+  const matchScore = Math.round(coverage * 100);
 
   return {
-    matchScore: finalScore,
+    matchScore,
     matchingSkills,
     missingSkills,
-    streamMatch
+    coverage
   };
 }
 
 /**
- * Generates automated skill gap recommendations based on missing skills
+ * Generates skill gap advice based on missing skills.
  */
-export function generateSkillGapAdvice(missingSkills = [], stream = "ayurveda") {
+export function generateSkillGapAdvice(missingSkills = []) {
   if (missingSkills.length === 0) {
-    return "Your profile strongly aligns with current industry requirements!";
+    return 'Your profile skills align well with the requirements!';
   }
-
-  return `To increase your selection chance, consider completing certifications or clinical postings in: ${missingSkills.slice(0, 3).join(", ")}.`;
+  const top = missingSkills.slice(0, 3).join(', ');
+  return `Consider building skills in: ${top}. Look for online courses, certifications, or project experience in these areas.`;
 }
