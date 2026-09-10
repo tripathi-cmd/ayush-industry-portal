@@ -4,13 +4,13 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { db } from './db.js';
-import { calculateMatchScore, generateSkillGapAdvice, AYUSH_DOMAINS } from './services/skillMatcher.js';
+import { calculateMatchScore, generateSkillGapAdvice, INDUSTRY_SECTORS } from './services/skillMatcher.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'ayush-ministry-secure-jwt-token-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'skillconnect-secure-jwt-token-key-2026';
 
 // Middlewares
 app.use(cors({
@@ -37,7 +37,7 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// Optional auth middleware (identifies user if token is passed, else proceeds as guest)
+// Optional auth middleware
 const optionalAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -57,17 +57,17 @@ const optionalAuth = (req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
-    portal: 'Ministry of Ayush - Industry Partnership Portal API',
-    version: '1.0.0',
+    portal: 'SkillConnect - Multi-Industry Academia Portal API',
+    version: '2.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
 /* ==========================================================================
-   AYUSH TAXONOMY
+   INDUSTRY TAXONOMY
    ========================================================================== */
 app.get('/api/taxonomy', (req, res) => {
-  res.json(AYUSH_DOMAINS);
+  res.json(INDUSTRY_SECTORS);
 });
 
 /* ==========================================================================
@@ -75,7 +75,7 @@ app.get('/api/taxonomy', (req, res) => {
    ========================================================================== */
 // Register
 app.post('/api/auth/register', (req, res) => {
-  const { email, password, role, name, stream, degree, institution, companyName, ayushSector, licenseNumber } = req.body;
+  const { email, password, role, name, stream, degree, institution, companyName, industrySector, licenseNumber } = req.body;
 
   if (!email || !password || !role) {
     return res.status(400).json({ message: 'Email, password, and role are required' });
@@ -95,32 +95,30 @@ app.post('/api/auth/register', (req, res) => {
     email: email.toLowerCase(),
     password: hashedPassword,
     role,
-    name: name || (role === 'industry' ? companyName : 'Ayush Professional'),
+    name: name || (role === 'industry' ? companyName : 'Professional'),
     createdAt: new Date().toISOString()
   };
 
   if (role === 'student') {
-    newUser.stream = stream || 'ayurveda';
-    newUser.degree = degree || 'BAMS';
-    newUser.institution = institution || 'Ayush University';
+    newUser.stream = stream || 'technology';
+    newUser.degree = degree || 'Bachelor';
+    newUser.institution = institution || 'University';
     newUser.skills = [];
     newUser.assessmentScores = [];
     newUser.documents = [];
   } else if (role === 'industry') {
-    newUser.companyName = companyName || name || 'Ayush Enterprise';
-    newUser.ayushSector = ayushSector || stream || 'ayurveda';
-    newUser.licenseNumber = licenseNumber || 'AYUSH-PENDING-SUBMISSION';
-    newUser.gmpCertified = false;
-    newUser.verificationStatus = 'pending'; // Requires Ministry review
+    newUser.companyName = companyName || name || 'Enterprise';
+    newUser.industrySector = industrySector || stream || 'technology';
+    newUser.licenseNumber = licenseNumber || 'PENDING-SUBMISSION';
+    newUser.certifications = [];
+    newUser.verificationStatus = 'pending';
   }
 
   data.users.push(newUser);
   db.write(data);
 
-  // Issue token
   const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
   
-  // Strip password
   const { password: _, ...userWithoutPassword } = newUser;
   res.status(201).json({
     token,
@@ -149,7 +147,6 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ message: 'Invalid password. Please check your credentials.' });
   }
 
-  // Validate selected role if provided
   if (role && user.role !== role) {
     return res.status(403).json({ message: `Account registered as ${user.role}. Please select the correct login role.` });
   }
@@ -178,7 +175,7 @@ app.get('/api/auth/me', authenticate, (req, res) => {
 /* ==========================================================================
    STUDENT ROUTES
    ========================================================================== */
-// Update student profile (skills, degree, institution, bio)
+// Update student profile
 app.put('/api/students/profile', authenticate, (req, res) => {
   const data = db.read();
   const userIndex = data.users.findIndex(u => u.id === req.user.id);
@@ -207,9 +204,9 @@ app.post('/api/students/upload-document', authenticate, (req, res) => {
 
   const newDoc = {
     id: `doc_${Date.now()}`,
-    title: title || 'Ayush Degree Certificate',
+    title: title || 'Degree Certificate',
     type: type || 'Academic Record',
-    status: 'verified', // In test/demo mode, automatically verified by Ministry
+    status: 'verified',
     verifiedAt: new Date().toISOString().split('T')[0]
   };
 
@@ -230,7 +227,6 @@ app.get('/api/students/recommendations', authenticate, (req, res) => {
 
   const approvedOpportunities = data.opportunities.filter(o => o.status === 'approved');
 
-  // Score each opportunity
   const recommendations = approvedOpportunities.map(opp => {
     const matchAnalysis = calculateMatchScore(
       student.skills || [],
@@ -250,7 +246,6 @@ app.get('/api/students/recommendations', authenticate, (req, res) => {
     };
   });
 
-  // Sort by highest match score
   recommendations.sort((a, b) => b.matchScore - a.matchScore);
 
   res.json(recommendations);
@@ -269,7 +264,6 @@ app.get('/api/assessments', optionalAuth, (req, res) => {
     assessments = assessments.filter(a => a.stream === stream);
   }
 
-  // Remove answer keys for safety
   const safeAssessments = assessments.map(asm => ({
     id: asm.id,
     stream: asm.stream,
@@ -289,7 +283,6 @@ app.get('/api/assessments/:id', (req, res) => {
   const asm = data.assessments.find(a => a.id === req.params.id);
   if (!asm) return res.status(404).json({ message: 'Assessment module not found' });
 
-  // Exclude correct answers from questions payload
   const clientQuestions = asm.questions.map(q => ({
     id: q.id,
     question: q.question,
@@ -309,7 +302,7 @@ app.get('/api/assessments/:id', (req, res) => {
 
 // Submit assessment answers
 app.post('/api/assessments/:id/submit', authenticate, (req, res) => {
-  const { answers } = req.body; // map of question id => selectedOption index
+  const { answers } = req.body;
   const data = db.read();
   const asm = data.assessments.find(a => a.id === req.params.id);
   if (!asm) return res.status(404).json({ message: 'Assessment not found' });
@@ -334,7 +327,6 @@ app.post('/api/assessments/:id/submit', authenticate, (req, res) => {
   const percentage = Math.round((correctCount / asm.questions.length) * 100);
   const passed = percentage >= asm.passingScore;
 
-  // Record in student profile
   const userIndex = data.users.findIndex(u => u.id === req.user.id);
   if (userIndex !== -1) {
     if (!data.users[userIndex].assessmentScores) {
@@ -353,7 +345,6 @@ app.post('/api/assessments/:id/submit', authenticate, (req, res) => {
       completedAt: new Date().toISOString()
     };
 
-    // Replace if taken before or push
     const existingIndex = data.users[userIndex].assessmentScores.findIndex(s => s.title === asm.title);
     if (existingIndex >= 0) {
       data.users[userIndex].assessmentScores[existingIndex] = record;
@@ -382,7 +373,6 @@ app.get('/api/opportunities', optionalAuth, (req, res) => {
   const { stream, type, search } = req.query;
   let list = data.opportunities;
 
-  // Filter approved only unless user is admin or the posting company
   if (!req.user || req.user.role === 'student') {
     list = list.filter(o => o.status === 'approved');
   }
@@ -405,7 +395,6 @@ app.get('/api/opportunities', optionalAuth, (req, res) => {
     );
   }
 
-  // If student is logged in, attach personalized AI match score
   if (req.user && req.user.role === 'student') {
     const student = data.users.find(u => u.id === req.user.id);
     if (student) {
@@ -457,7 +446,7 @@ app.get('/api/opportunities/:id', optionalAuth, (req, res) => {
 // Post Opportunity (Industry Partner)
 app.post('/api/opportunities', authenticate, (req, res) => {
   if (req.user.role !== 'industry' && req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only Industry Partners or Ministry Admin can post opportunities' });
+    return res.status(403).json({ message: 'Only Industry Partners or Admin can post opportunities' });
   }
 
   const data = db.read();
@@ -477,21 +466,21 @@ app.post('/api/opportunities', authenticate, (req, res) => {
   } = req.body;
 
   if (!title || !stream) {
-    return res.status(400).json({ message: 'Title and Ayush stream are required' });
+    return res.status(400).json({ message: 'Title and industry sector are required' });
   }
 
   const newOpp = {
     id: `opp_${Date.now()}`,
     postedBy: req.user.id,
-    companyName: user ? (user.companyName || user.name) : 'Ayush Partner',
+    companyName: user ? (user.companyName || user.name) : 'Partner Company',
     title,
-    stream: stream || 'ayurveda',
-    type: type || 'Internship (Clinical)',
+    stream: stream || 'technology',
+    type: type || 'Internship',
     location: location || 'On-site',
-    stipend: stipend || '₹20,000 / month',
+    stipend: stipend || '₹15,000 / month',
     duration: duration || '6 Months',
     openings: parseInt(openings) || 2,
-    status: req.user.role === 'admin' ? 'approved' : 'pending', // Requires Ministry verification if posted by industry
+    status: req.user.role === 'admin' ? 'approved' : 'pending',
     requiredSkills: Array.isArray(requiredSkills) ? requiredSkills : (requiredSkills ? requiredSkills.split(',').map(s => s.trim()) : []),
     description: description || '',
     eligibility: eligibility || 'Graduates / Final Year Students',
@@ -505,7 +494,7 @@ app.post('/api/opportunities', authenticate, (req, res) => {
     opportunity: newOpp,
     message: req.user.role === 'admin' 
       ? 'Opportunity published immediately' 
-      : 'Opportunity submitted for Ministry compliance approval'
+      : 'Opportunity submitted for compliance approval'
   });
 });
 
@@ -520,7 +509,6 @@ app.get('/api/applications', authenticate, (req, res) => {
   if (req.user.role === 'student') {
     apps = apps.filter(a => a.studentId === req.user.id);
   } else if (req.user.role === 'industry') {
-    // Return applications for opportunities posted by this company or matching companyName
     const user = data.users.find(u => u.id === req.user.id);
     const myOppIds = data.opportunities
       .filter(o => o.postedBy === req.user.id || (user && o.companyName === user.companyName))
@@ -535,7 +523,7 @@ app.get('/api/applications', authenticate, (req, res) => {
 // Submit Application (Student)
 app.post('/api/applications', authenticate, (req, res) => {
   if (req.user.role !== 'student') {
-    return res.status(403).json({ message: 'Only students can submit internship applications' });
+    return res.status(403).json({ message: 'Only students can submit applications' });
   }
 
   const { opportunityId } = req.body;
@@ -547,13 +535,11 @@ app.post('/api/applications', authenticate, (req, res) => {
   const student = data.users.find(u => u.id === req.user.id);
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
-  // Prevent duplicate application
   const existing = data.applications.find(a => a.opportunityId === opportunityId && a.studentId === req.user.id);
   if (existing) {
     return res.status(409).json({ message: 'You have already applied for this position', application: existing });
   }
 
-  // Calculate matching details
   const matchAnalysis = calculateMatchScore(
     student.skills || [],
     opp.requiredSkills || [],
@@ -579,7 +565,6 @@ app.post('/api/applications', authenticate, (req, res) => {
 
   data.applications.unshift(newApp);
 
-  // Send notification to student
   data.notifications.unshift({
     id: `notif_${Date.now()}`,
     userId: student.id,
@@ -597,7 +582,7 @@ app.post('/api/applications', authenticate, (req, res) => {
   });
 });
 
-// Update Application Status & Schedule Interview (Industry or Admin)
+// Update Application Status & Schedule Interview
 app.patch('/api/applications/:id/status', authenticate, (req, res) => {
   const { status, interviewDetails } = req.body;
   const data = db.read();
@@ -613,7 +598,6 @@ app.patch('/api/applications/:id/status', authenticate, (req, res) => {
     data.applications[appIndex].interviewDetails = interviewDetails;
   }
 
-  // Notify student
   const studentId = data.applications[appIndex].studentId;
   const oppTitle = data.applications[appIndex].opportunityTitle;
   const comp = data.applications[appIndex].companyName;
@@ -643,12 +627,12 @@ app.patch('/api/applications/:id/status', authenticate, (req, res) => {
 });
 
 /* ==========================================================================
-   MINISTRY ADMIN ROUTES
+   ADMIN ROUTES
    ========================================================================== */
 // Admin Dashboard Overview & Analytics
 app.get('/api/admin/overview', authenticate, (req, res) => {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Restricted to Ministry Admin' });
+    return res.status(403).json({ message: 'Restricted to Admin' });
   }
 
   const data = db.read();
@@ -672,39 +656,36 @@ app.get('/api/admin/overview', authenticate, (req, res) => {
       successfulPlacements: placements.length,
       placementRatePercent: data.applications.length > 0 ? Math.round((placements.length / data.applications.length) * 100) : 0
     },
-    // Sector Distribution
     sectorDistribution: [
-      { name: 'Ayurveda', students: 54, opportunities: 28, placements: 19 },
-      { name: 'Yoga & Naturopathy', students: 38, opportunities: 16, placements: 12 },
-      { name: 'Homeopathy', students: 25, opportunities: 11, placements: 8 },
-      { name: 'Unani', students: 18, opportunities: 9, placements: 6 },
-      { name: 'Siddha', students: 12, opportunities: 6, placements: 4 }
+      { name: 'Technology', students: 120, opportunities: 45, placements: 38 },
+      { name: 'Healthcare', students: 85, opportunities: 32, placements: 26 },
+      { name: 'Finance', students: 60, opportunities: 28, placements: 22 },
+      { name: 'Manufacturing', students: 55, opportunities: 20, placements: 15 },
+      { name: 'AYUSH', students: 54, opportunities: 28, placements: 19 }
     ],
-    // Skill Demand vs Supply
     skillGaps: [
-      { skill: 'Panchakarma Clinical', demand: 90, supply: 65 },
-      { skill: 'Herbal Pharmacognosy / QC', demand: 85, supply: 42 },
-      { skill: 'Schedule T GMP Compliance', demand: 78, supply: 30 },
-      { skill: 'Nadi Pariksha Diagnostics', demand: 75, supply: 55 },
-      { skill: 'Therapeutic Yoga Protocols', demand: 80, supply: 70 },
-      { skill: 'Repertorization & Case Taking', demand: 68, supply: 50 }
+      { skill: 'Fullstack Development', demand: 95, supply: 65 },
+      { skill: 'Machine Learning', demand: 90, supply: 42 },
+      { skill: 'Cloud Architecture', demand: 88, supply: 50 },
+      { skill: 'Clinical Research', demand: 75, supply: 55 },
+      { skill: 'Financial Analysis', demand: 82, supply: 70 },
+      { skill: 'Project Management', demand: 80, supply: 60 }
     ],
-    // Placement Trends
     placementTrends: [
-      { month: 'Apr', placements: 4 },
-      { month: 'May', placements: 7 },
-      { month: 'Jun', placements: 11 },
-      { month: 'Jul', placements: 18 },
-      { month: 'Aug', placements: 26 },
-      { month: 'Sep', placements: 34 }
+      { month: 'Apr', placements: 8 },
+      { month: 'May', placements: 12 },
+      { month: 'Jun', placements: 18 },
+      { month: 'Jul', placements: 25 },
+      { month: 'Aug', placements: 35 },
+      { month: 'Sep', placements: 48 }
     ]
   });
 });
 
-// Admin Review Queues (Pending partners and opportunities)
+// Admin Review Queues
 app.get('/api/admin/pending', authenticate, (req, res) => {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Restricted to Ministry Admin' });
+    return res.status(403).json({ message: 'Restricted to Admin' });
   }
 
   const data = db.read();
@@ -719,9 +700,9 @@ app.get('/api/admin/pending', authenticate, (req, res) => {
 
 // Verify Industry Partner (Admin)
 app.post('/api/admin/verify-partner/:id', authenticate, (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Restricted to Ministry Admin' });
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Restricted to Admin' });
 
-  const { status } = req.body; // 'verified' | 'rejected'
+  const { status } = req.body;
   const data = db.read();
   const user = data.users.find(u => u.id === req.params.id && u.role === 'industry');
 
@@ -736,9 +717,9 @@ app.post('/api/admin/verify-partner/:id', authenticate, (req, res) => {
 
 // Approve Opportunity (Admin)
 app.post('/api/admin/approve-opportunity/:id', authenticate, (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Restricted to Ministry Admin' });
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Restricted to Admin' });
 
-  const { status } = req.body; // 'approved' | 'rejected'
+  const { status } = req.body;
   const data = db.read();
   const opp = data.opportunities.find(o => o.id === req.params.id);
 
@@ -769,7 +750,24 @@ app.patch('/api/notifications/:id/read', authenticate, (req, res) => {
   res.json({ success: true });
 });
 
+/* ==========================================================================
+   ERROR HANDLING
+   ========================================================================== */
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
+  });
+});
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Endpoint not found' });
+});
+
 // Start Server
 app.listen(PORT, () => {
-  console.log(`Ministry of Ayush Portal Backend running at http://localhost:${PORT}`);
+  console.log(`✓ SkillConnect Backend running at http://localhost:${PORT}`);
+  console.log(`✓ API Health Check: http://localhost:${PORT}/api/health`);
 });
