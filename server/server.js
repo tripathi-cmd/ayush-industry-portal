@@ -912,11 +912,19 @@ app.all('/api/*', (_req, res) => {
 // ═══════════════════════════════════════════════════════════════
 //  STARTUP
 // ═══════════════════════════════════════════════════════════════
-async function start() {
-  try {
+let dbInitialized = false;
+export async function ensureDbReady() {
+  if (!dbInitialized) {
     await initDb();
     await seedAssessments();
     await bootstrapAdmin();
+    dbInitialized = true;
+  }
+}
+
+async function start() {
+  try {
+    await ensureDbReady();
     app.listen(PORT, () => {
       console.log(`Skill Connect API running at http://localhost:${PORT}`);
     });
@@ -926,6 +934,9 @@ async function start() {
   }
 }
 
-start();
+if (!process.env.VERCEL) {
+  start();
+}
 
 export default app;
+

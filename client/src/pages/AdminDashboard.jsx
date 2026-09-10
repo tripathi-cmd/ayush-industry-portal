@@ -9,37 +9,43 @@ import {
   CheckCircle, 
   XCircle, 
   Download, 
-  BarChart3, 
-  TrendingUp, 
-  FileCheck 
+  Award,
+  UserCheck,
+  Plus,
+  AlertCircle
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [overview, setOverview] = useState(null);
-  const [pending, setPending] = useState({ pendingPartners: [], pendingOpportunities: [] });
+  const [pending, setPending] = useState({ pendingUsers: [], pendingOpportunities: [] });
+  const [mentorships, setMentorships] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [alertMsg, setAlertMsg] = useState('');
+  const [alertMsg, setAlertMsg] = useState({ text: '', type: '' });
+  const [activeTab, setActiveTab] = useState('pending');
+
+  // Mentorship assign form
+  const [selectedMentorId, setSelectedMentorId] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [overviewData, pendingData] = await Promise.all([
+      const [overviewData, pendingData, mentorAssignments, allStudents, allMentors] = await Promise.all([
         adminService.getOverview(),
-        adminService.getPending()
+        adminService.getPending(),
+        adminService.getMentorshipAssignments().catch(() => []),
+        adminService.getUsers('student').catch(() => []),
+        adminService.getUsers('mentor').catch(() => [])
       ]);
       setOverview(overviewData);
       setPending(pendingData);
+      setMentorships(mentorAssignments);
+      setStudents(allStudents);
+      setMentors(allMentors.filter(m => m.approval === 'approved'));
     } catch (err) {
       console.error("Failed to load admin overview:", err);
     } finally {
@@ -51,173 +57,212 @@ export default function AdminDashboard() {
     loadData();
   }, [loadData]);
 
-  const handleVerifyPartner = async (partnerId, status) => {
+  const handleUserApproval = async (userId, approval) => {
+    setAlertMsg({ text: '', type: '' });
     try {
-      await adminService.verifyPartner(partnerId, status);
-      setAlertMsg(`Industry partner status updated to: ${status.toUpperCase()}`);
+      await adminService.updateUserApproval(userId, approval);
+      setAlertMsg({ text: `User account successfully ${approval}.`, type: 'success' });
       loadData();
     } catch (err) {
-      console.error(err);
+      setAlertMsg({ text: err.response?.data?.message || "Failed to update user approval", type: 'error' });
     }
   };
 
-  const handleApproveOpp = async (oppId, status) => {
+  const handleOppApproval = async (oppId, status) => {
+    setAlertMsg({ text: '', type: '' });
     try {
-      await adminService.approveOpportunity(oppId, status);
-      setAlertMsg(`Opportunity status updated to: ${status.toUpperCase()}`);
+      await adminService.updateOpportunityStatus(oppId, status);
+      setAlertMsg({ text: `Opportunity listing ${status}.`, type: 'success' });
       loadData();
     } catch (err) {
-      console.error(err);
+      setAlertMsg({ text: err.response?.data?.message || "Failed to update opportunity status", type: 'error' });
     }
   };
 
-  const handleExportCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Ayush Sector,Students,Opportunities,Placements\n"
-      + (overview?.sectorDistribution || []).map(e => `${e.name},${e.students},${e.opportunities},${e.placements}`).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Ministry_Ayush_Placement_Report_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleAssignMentorship = async (e) => {
+    e.preventDefault();
+    if (!selectedMentorId || !selectedStudentId) return;
+    setAssignLoading(true);
+    setAlertMsg({ text: '', type: '' });
+    try {
+      await adminService.assignMentorship(selectedMentorId, selectedStudentId);
+      setAlertMsg({ text: 'Mentor and student successfully paired!', type: 'success' });
+      setSelectedMentorId('');
+      setSelectedStudentId('');
+      loadData();
+    } catch (err) {
+      setAlertMsg({ text: err.response?.data?.message || 'Failed to assign mentorship', type: 'error' });
+    } finally {
+      setAssignLoading(false);
+    }
   };
 
   const metrics = overview?.metrics || {
-    totalStudents: 1,
-    totalIndustryPartners: 4,
-    verifiedPartners: 3,
-    pendingPartnerApprovals: 1,
-    activeOpportunities: 4,
-    pendingOpportunityApprovals: 1,
-    totalApplications: 2,
-    successfulPlacements: 1,
-    placementRatePercent: 50
+    totalStudents: 0,
+    totalRecruiters: 0,
+    totalMentors: 0,
+    pendingApprovals: 0,
+    activeOpportunities: 0,
+    pendingOpportunities: 0,
+    totalApplications: 0,
+    successfulPlacements: 0
   };
 
   return (
     <div className="dashboard-container">
-      {/* Admin Hero */}
-      <div className="ayush-hero-banner admin">
-        <div className="hero-left">
-          <div className="avatar-circle admin-avatar">
-            <ShieldCheck size={32} />
-          </div>
-          <div className="hero-info">
-            <div className="name-row">
-              <h2>Ministry of Ayush • Verification Directorate</h2>
-              <span className="verified-pill gold">
-                Official Regulatory Dashboard
-              </span>
-            </div>
-            <p className="academic-line">
-              <span>National Ayush Mission (NAM) Collaborative Portal Governance</span>
-              <span className="divider">|</span>
-              <span>Officer: <strong>{user?.name || 'Administrator'}</strong></span>
-            </p>
-          </div>
+      {/* Header */}
+      <div className="page-header-row">
+        <div>
+          <h2>Portal Administration Console</h2>
+          <p className="page-subtitle">
+            System governance, partner approval queues, opportunity verification, and student–mentor assignments.
+          </p>
         </div>
-
-        <div className="hero-right">
-          <button onClick={handleExportCSV} className="btn btn-secondary">
-            <Download size={16} /> Export Compliance Report
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="status-badge status-accepted" style={{ fontSize: '13px', padding: '6px 14px' }}>
+            <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px' }} />
+            Administrator
+          </span>
         </div>
       </div>
 
-      {alertMsg && (
-        <div className="action-alert-box">
-          <CheckCircle size={18} />
-          <span>{alertMsg}</span>
+      {alertMsg.text && (
+        <div className={`alert-box ${alertMsg.type === 'error' ? 'alert-error' : 'alert-success'}`} style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          backgroundColor: alertMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+          color: alertMsg.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${alertMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`
+        }}>
+          {alertMsg.text}
         </div>
       )}
 
-      {loading ? (
-        <div className="skeleton-loader">Loading Ministry analytics & verification queues...</div>
-      ) : (
-        <>
-          {/* Metrics Row */}
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon-box green">
-            <Users size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{metrics.totalStudents}</span>
-            <span className="metric-label">Registered Students</span>
-          </div>
+      {/* Database-derived Metrics Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Enrolled Students</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#0f172a' }}>
+            {metrics.totalStudents}
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box teal">
-            <Building2 size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{metrics.verifiedPartners} / {metrics.totalIndustryPartners}</span>
-            <span className="metric-label">Verified Industry Partners</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Recruiters & Mentors</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#2563eb' }}>
+            {metrics.totalRecruiters + metrics.totalMentors}
+            <span style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginLeft: '6px' }}>
+              ({metrics.totalRecruiters} rec / {metrics.totalMentors} men)
+            </span>
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box amber">
-            <Briefcase size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{metrics.activeOpportunities}</span>
-            <span className="metric-label">Approved Internships</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Pending Approvals</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: metrics.pendingApprovals + metrics.pendingOpportunities > 0 ? '#d97706' : '#16a34a' }}>
+            {metrics.pendingApprovals + metrics.pendingOpportunities}
+            <span style={{ fontSize: '12px', fontWeight: 400, color: '#64748b', marginLeft: '6px' }}>
+              ({metrics.pendingApprovals} users / {metrics.pendingOpportunities} opps)
+            </span>
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box gold">
-            <TrendingUp size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{metrics.placementRatePercent}%</span>
-            <span className="metric-label">Sector Placement Rate</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Successful Placements</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#059669' }}>
+            {metrics.successfulPlacements}
+          </h3>
         </div>
       </div>
 
-      {/* Pending Verifications Queue */}
-      <div className="two-column-layout">
-        {/* Pending Industry Partners */}
-        <div className="main-column">
-          <div className="content-card">
-            <div className="card-header">
-              <div className="card-title-icon">
-                <Building2 size={20} className="green-icon" />
-                <h3>Pending Industry Partner Verifications</h3>
-              </div>
-              <span className="info-tag warning">{pending.pendingPartners.length} Pending</span>
-            </div>
+      {/* Sub Tabs */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e2e8f0', marginBottom: '20px' }}>
+        <button
+          onClick={() => setActiveTab('pending')}
+          style={{
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'pending' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'pending' ? '#2563eb' : '#64748b',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          Pending Approvals ({pending.pendingUsers?.length + pending.pendingOpportunities?.length || 0})
+        </button>
+        <button
+          onClick={() => setActiveTab('mentorship')}
+          style={{
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'mentorship' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'mentorship' ? '#2563eb' : '#64748b',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          Mentorship Assignments ({mentorships.length})
+        </button>
+      </div>
 
-            {pending.pendingPartners.length === 0 ? (
-              <p className="empty-text">All registered industry partners have been reviewed and verified.</p>
+      {/* TAB 1: Pending Approvals */}
+      {activeTab === 'pending' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Pending Users */}
+          <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px 0', color: '#0f172a' }}>
+              Pending Recruiter & Mentor Registrations ({pending.pendingUsers?.length || 0})
+            </h3>
+
+            {(!pending.pendingUsers || pending.pendingUsers.length === 0) ? (
+              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>No partner accounts awaiting approval.</p>
             ) : (
-              <div className="pending-list">
-                {pending.pendingPartners.map(p => (
-                  <div key={p.id} className="pending-card">
-                    <div className="pending-info">
-                      <h4>{p.companyName}</h4>
-                      <p className="meta-text">
-                        Ayush Sector: <strong>{p.ayushSector.toUpperCase()}</strong> • License: <strong>{p.licenseNumber}</strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {pending.pendingUsers.map(u => (
+                  <div
+                    key={u.id}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb' }}>
+                          {u.role.toUpperCase()}
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a' }}>{u.name}</h4>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                        Email: {u.email}
+                        {u.profile?.companyName && ` • Company: ${u.profile.companyName}`}
+                        {u.profile?.expertise && ` • Domain: ${u.profile.expertise}`}
                       </p>
-                      <p className="desc-text">{p.about}</p>
                     </div>
-                    <div className="pending-actions">
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <button
-                        onClick={() => handleVerifyPartner(p.id, 'verified')}
+                        onClick={() => handleUserApproval(u.id, 'approved')}
                         className="btn btn-primary btn-sm"
+                        style={{ fontSize: '12px', background: '#16a34a', borderColor: '#16a34a' }}
                       >
-                        <CheckCircle size={14} /> Verify & Accredit
+                        <CheckCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                        Approve
                       </button>
                       <button
-                        onClick={() => handleVerifyPartner(p.id, 'rejected')}
-                        className="btn btn-outline btn-sm danger"
+                        onClick={() => handleUserApproval(u.id, 'rejected')}
+                        className="btn btn-outline btn-sm"
+                        style={{ fontSize: '12px', color: '#dc2626', borderColor: '#fecaca' }}
                       >
-                        <XCircle size={14} /> Reject
+                        <XCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                        Reject
                       </button>
                     </div>
                   </div>
@@ -227,40 +272,56 @@ export default function AdminDashboard() {
           </div>
 
           {/* Pending Opportunities */}
-          <div className="content-card">
-            <div className="card-header">
-              <div className="card-title-icon">
-                <FileCheck size={20} className="green-icon" />
-                <h3>Pending Internship Approval Queue</h3>
-              </div>
-              <span className="info-tag warning">{pending.pendingOpportunities.length} Pending</span>
-            </div>
+          <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px 0', color: '#0f172a' }}>
+              Pending Opportunity Submissions ({pending.pendingOpportunities?.length || 0})
+            </h3>
 
-            {pending.pendingOpportunities.length === 0 ? (
-              <p className="empty-text">No pending internship postings requiring compliance clearance.</p>
+            {(!pending.pendingOpportunities || pending.pendingOpportunities.length === 0) ? (
+              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>No opportunity listings awaiting review.</p>
             ) : (
-              <div className="pending-list">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {pending.pendingOpportunities.map(opp => (
-                  <div key={opp.id} className="pending-card">
-                    <div className="pending-info">
-                      <h4>{opp.title} — {opp.companyName}</h4>
-                      <p className="meta-text">
-                        {opp.stream.toUpperCase()} • Stipend: <strong>{opp.stipend}</strong> • Duration: {opp.duration}
+                  <div
+                    key={opp.id}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb' }}>
+                          {opp.type}
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a' }}>{opp.title}</h4>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                        Company: <strong>{opp.company_name}</strong> • {opp.location} • {opp.stipend} • {opp.duration}
                       </p>
-                      <p className="desc-text">{opp.description}</p>
                     </div>
-                    <div className="pending-actions">
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <button
-                        onClick={() => handleApproveOpp(opp.id, 'approved')}
+                        onClick={() => handleOppApproval(opp.id, 'approved')}
                         className="btn btn-primary btn-sm"
+                        style={{ fontSize: '12px', background: '#16a34a', borderColor: '#16a34a' }}
                       >
-                        <CheckCircle size={14} /> Approve Posting
+                        <CheckCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                        Approve & Publish
                       </button>
                       <button
-                        onClick={() => handleApproveOpp(opp.id, 'rejected')}
-                        className="btn btn-outline btn-sm danger"
+                        onClick={() => handleOppApproval(opp.id, 'rejected')}
+                        className="btn btn-outline btn-sm"
+                        style={{ fontSize: '12px', color: '#dc2626', borderColor: '#fecaca' }}
                       >
-                        <XCircle size={14} /> Reject
+                        <XCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                        Reject
                       </button>
                     </div>
                   </div>
@@ -269,55 +330,107 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+      )}
 
-        {/* Analytics & Compliance Sidebar */}
-        <div className="side-column">
-          <div className="content-card">
-            <div className="card-header">
-              <div className="card-title-icon">
-                <BarChart3 size={20} className="gold-icon" />
-                <h4>Ayush Sector Distribution</h4>
+      {/* TAB 2: Mentorship Assignments */}
+      {activeTab === 'mentorship' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+          {/* Pair Form */}
+          <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 14px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <UserCheck size={18} color="#2563eb" /> Assign Mentor
+            </h3>
+
+            <form onSubmit={handleAssignMentorship}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                  Select Approved Mentor *
+                </label>
+                <select
+                  required
+                  value={selectedMentorId}
+                  onChange={(e) => setSelectedMentorId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                >
+                  <option value="">-- Choose Mentor --</option>
+                  {mentors.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.profile?.expertise || 'Mentor'})
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div className="chart-container" style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
-                <BarChart data={overview?.sectorDistribution || []}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="students" fill="#137547" name="Students" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="placements" fill="#d97706" name="Placements" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+
+              <div className="form-group" style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                  Select Student *
+                </label>
+                <select
+                  required
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                >
+                  <option value="">-- Choose Student --</option>
+                  {students.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={assignLoading || !selectedMentorId || !selectedStudentId}
+                className="btn btn-primary btn-block"
+                style={{ width: '100%', padding: '10px', fontSize: '13px' }}
+              >
+                {assignLoading ? 'Assigning...' : 'Assign Mentorship'}
+              </button>
+            </form>
           </div>
 
-          <div className="content-card">
-            <div className="card-header">
-              <div className="card-title-icon">
-                <TrendingUp size={20} className="green-icon" />
-                <h4>Skill Demand vs Talent Supply</h4>
+          {/* Active Assignments Table */}
+          <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px 0' }}>
+              Active Mentorship Pairings ({mentorships.length})
+            </h3>
+
+            {mentorships.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: '13px' }}>No mentor-student pairings established yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {mentorships.map(ma => (
+                  <div
+                    key={ma.id}
+                    style={{
+                      padding: '14px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>
+                        Mentor: {ma.mentor_name} <span style={{ color: '#64748b', fontWeight: 400 }}>({ma.mentor_email})</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#2563eb', marginTop: '2px' }}>
+                        Student: {ma.student_name} <span style={{ color: '#64748b' }}>({ma.student_email})</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      Assigned: {new Date(ma.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="chart-container" style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
-                <BarChart data={overview?.skillGaps || []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="skill" width={110} tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="demand" fill="#ea580c" name="Industry Demand" />
-                  <Bar dataKey="supply" fill="#059669" name="Certified Supply" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            )}
           </div>
         </div>
-      </div>
-      </>
       )}
     </div>
   );

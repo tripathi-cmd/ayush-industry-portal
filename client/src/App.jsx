@@ -12,6 +12,7 @@ import Assessment from "./pages/Assessment";
 import Opportunities from "./pages/Opportunities";
 import Applications from "./pages/Applications";
 import IndustryDashboard from "./pages/IndustryDashboard";
+import MentorDashboard from "./pages/MentorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
@@ -56,23 +57,34 @@ function App() {
               <Route
                 path="/applications"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['student', 'recruiter', 'admin']}>
                     <Applications />
                   </ProtectedRoute>
                 }
               />
 
-              {/* Industry Partner Protected Routes */}
+              {/* Recruiter Protected Routes (with legacy /industry redirect) */}
               <Route
-                path="/industry"
+                path="/recruiter"
                 element={
-                  <ProtectedRoute allowedRole="industry">
+                  <ProtectedRoute allowedRole="recruiter">
                     <IndustryDashboard />
                   </ProtectedRoute>
                 }
               />
+              <Route path="/industry" element={<Navigate to="/recruiter" replace />} />
 
-              {/* Ministry Admin Protected Routes */}
+              {/* Mentor Protected Routes */}
+              <Route
+                path="/mentor"
+                element={
+                  <ProtectedRoute allowedRole="mentor">
+                    <MentorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Protected Routes */}
               <Route
                 path="/admin"
                 element={

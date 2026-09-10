@@ -1,54 +1,68 @@
+import { Link } from 'react-router-dom';
+import { Compass, Briefcase, GraduationCap, Building2, ShieldCheck } from 'lucide-react';
+
 export default function Footer() {
   return (
-    <footer className="ayush-footer">
+    <footer className="ayush-footer" style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
       <div className="footer-top">
         <div className="footer-col">
-          <div className="footer-brand">
-            <span className="footer-leaf">🌿</span>
-            <h4>Ministry of Ayush</h4>
+          <div className="footer-brand" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: '#eff6ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid #bfdbfe'
+            }}>
+              <Compass size={18} color="#2563eb" />
+            </div>
+            <h4 style={{ margin: 0, color: '#1e3a8a', fontSize: '18px', fontWeight: 700 }}>Skill Connect</h4>
           </div>
-          <p className="footer-desc">
-            An initiative under the National Ayush Mission (NAM) bridging academic institutions, 
-            research councils, and leading industry partners in Ayurveda, Yoga, Naturopathy, 
-            Unani, Siddha, and Homeopathy.
+          <p className="footer-desc" style={{ color: '#64748b', fontSize: '13px', lineHeight: '1.6' }}>
+            A unified Academia–Industry Collaboration platform bridging students, academic institutions, 
+            mentors, and recruiters with skill assessments, transparent job matching, and career development.
           </p>
-          <div className="ayush-chips">
-            <span className="chip">Ayurveda</span>
-            <span className="chip">Yoga</span>
-            <span className="chip">Naturopathy</span>
-            <span className="chip">Unani</span>
-            <span className="chip">Siddha</span>
-            <span className="chip">Homeopathy</span>
+          <div className="ayush-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+            <span className="chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>Skill Assessment</span>
+            <span className="chip" style={{ background: '#e0f2fe', color: '#0369a1' }}>Internships</span>
+            <span className="chip" style={{ background: '#f0fdf4', color: '#166534' }}>Mentorship</span>
+            <span className="chip" style={{ background: '#fef3c7', color: '#92400e' }}>Placements</span>
           </div>
         </div>
 
         <div className="footer-col">
-          <h5>Statutory Councils & Institutes</h5>
-          <ul className="footer-links">
-            <li><a href="https://ccras.nic.in" target="_blank" rel="noreferrer">CCRAS (Ayurvedic Sciences)</a></li>
-            <li><a href="https://ccrhindia.nic.in" target="_blank" rel="noreferrer">CCRH (Homeopathic Research)</a></li>
-            <li><a href="https://ccrum.res.in" target="_blank" rel="noreferrer">CCRUM (Unani Medicine)</a></li>
-            <li><a href="https://siddhacouncil.com" target="_blank" rel="noreferrer">CCRS (Siddha Research)</a></li>
-            <li><a href="https://aiia.gov.in" target="_blank" rel="noreferrer">All India Institute of Ayurveda (AIIA)</a></li>
+          <h5 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Portals</h5>
+          <ul className="footer-links" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <li><Link to="/student" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Student Dashboard</Link></li>
+            <li><Link to="/recruiter" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Recruiter Portal</Link></li>
+            <li><Link to="/mentor" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Academic & Industry Mentorship</Link></li>
+            <li><Link to="/admin" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Admin Console</Link></li>
+            <li><Link to="/opportunities" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Browse Opportunities</Link></li>
           </ul>
         </div>
 
         <div className="footer-col">
-          <h5>Helpline & Regulatory Links</h5>
-          <ul className="footer-links">
-            <li>National Ayush Helpline: <strong>14443</strong> (Toll Free)</li>
-            <li>Schedule T (GMP) Verification Guidelines</li>
-            <li>E-Aushadhi Drug Licensing Portal</li>
-            <li>Pharmacopoeia Commission for Indian Medicine (PCIM&H)</li>
-            <li>Smart India Hackathon 2024–2026 Initiative</li>
+          <h5 style={{ color: '#0f172a', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Skill Development</h5>
+          <ul className="footer-links" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <li><Link to="/assessment" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Standardized Assessments</Link></li>
+            <li><Link to="/skills" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Technical & Soft Skill Profiles</Link></li>
+            <li><span style={{ color: '#64748b', fontSize: '13px' }}>Explainable Skill Compatibility</span></li>
+            <li><span style={{ color: '#64748b', fontSize: '13px' }}>Personalized Learning Milestones</span></li>
           </ul>
         </div>
       </div>
 
-      <div className="footer-bottom">
-        <div className="footer-bottom-content">
-          <p>© 2026 Ministry of Ayush, Government of India. All Rights Reserved.</p>
-          <p className="footer-meta">Academia-Industry Collaborative Skill Mapping & Placement Framework</p>
+      <div className="footer-bottom" style={{ borderTop: '1px solid #e2e8f0', marginTop: '24px', paddingTop: '16px' }}>
+        <div className="footer-bottom-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ margin: 0, color: '#94a3b8', fontSize: '13px' }}>
+            © {new Date().getFullYear()} Skill Connect. All Rights Reserved.
+          </p>
+          <p className="footer-meta" style={{ margin: 0, color: '#94a3b8', fontSize: '12px' }}>
+            Academia–Industry Collaborative Skill Mapping & Placement Platform
+          </p>
         </div>
       </div>
     </footer>

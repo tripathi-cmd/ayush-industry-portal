@@ -8,35 +8,40 @@ import {
   CheckCircle, 
   Plus, 
   Sparkles, 
-  Video, 
-  ShieldCheck, 
-  X 
+  Calendar, 
+  AlertTriangle, 
+  X,
+  Clock,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 
 export default function IndustryDashboard() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedAppForInterview, setSelectedAppForInterview] = useState(null);
   const [interviewDate, setInterviewDate] = useState('');
-  const [interviewerName, setInterviewerName] = useState(user?.name || 'Head of Talent');
+  const [meetingUrl, setMeetingUrl] = useState('');
   const [interviewNotes, setInterviewNotes] = useState('');
-  const [alertMsg, setAlertMsg] = useState('');
+  const [alertMsg, setAlertMsg] = useState({ text: '', type: '' });
+  const [activeTab, setActiveTab] = useState('applicants');
+
+  const isPending = user?.approval === 'pending';
 
   // New posting form state
   const [formData, setFormData] = useState({
     title: '',
-    stream: 'ayurveda',
-    type: 'Internship (Clinical)',
-    location: 'On-site',
-    stipend: '₹22,000 / month',
-    duration: '6 Months',
-    openings: 3,
+    type: 'Internship',
+    location: 'Remote',
+    stipend: '₹25,000 / month',
+    duration: '3 Months',
+    openings: 2,
     requiredSkills: '',
     description: '',
-    eligibility: 'BAMS / Ayush Graduates'
+    eligibility: 'Open to enrolled students & recent graduates'
   });
 
   const loadData = useCallback(async () => {
@@ -46,12 +51,12 @@ export default function IndustryDashboard() {
         opportunityService.getAll({}),
         applicationService.getAll()
       ]);
-      // Filter opportunities posted by this industry partner
-      const myOpps = opps.filter(o => o.postedBy === user?.id || o.companyName === user?.companyName);
+      // Opportunities posted by this recruiter
+      const myOpps = opps.filter(o => o.posted_by === user?.id || o.postedBy === user?.id);
       setOpportunities(myOpps);
       setApplications(apps);
     } catch (err) {
-      console.error("Error loading industry data:", err);
+      console.error("Error loading recruiter data:", err);
     } finally {
       setLoading(false);
     }
@@ -63,403 +68,499 @@ export default function IndustryDashboard() {
 
   const handlePostSubmit = async (e) => {
     e.preventDefault();
+    setAlertMsg({ text: '', type: '' });
     try {
       const skillsArray = formData.requiredSkills.split(',').map(s => s.trim()).filter(Boolean);
       await opportunityService.create({
         ...formData,
         requiredSkills: skillsArray
       });
-      setAlertMsg("New Ayush internship position posted successfully!");
+      setAlertMsg({
+        text: "Opportunity submitted successfully. It will be live once reviewed by an administrator.",
+        type: 'success'
+      });
       setShowPostModal(false);
       setFormData({
         title: '',
-        stream: 'ayurveda',
-        type: 'Internship (Clinical)',
-        location: 'On-site',
-        stipend: '₹22,000 / month',
-        duration: '6 Months',
-        openings: 3,
+        type: 'Internship',
+        location: 'Remote',
+        stipend: '₹25,000 / month',
+        duration: '3 Months',
+        openings: 2,
         requiredSkills: '',
         description: '',
-        eligibility: 'BAMS / Ayush Graduates'
+        eligibility: 'Open to enrolled students & recent graduates'
       });
       loadData();
     } catch (err) {
-      setAlertMsg(err.response?.data?.message || "Failed to post opportunity");
+      setAlertMsg({ text: err.response?.data?.message || "Failed to post opportunity", type: 'error' });
     }
   };
 
-  const handleUpdateAppStatus = async (appId, newStatus) => {
+  const handleUpdateAppStatus = async (appId, newStatus, interviewDetails = null) => {
+    setAlertMsg({ text: '', type: '' });
     try {
-      await applicationService.updateStatus(appId, { status: newStatus });
-      setAlertMsg(`Candidate status updated to: ${newStatus.replace('_', ' ').toUpperCase()}`);
+      await applicationService.updateStatus(appId, {
+        status: newStatus,
+        interviewDetails
+      });
+      setAlertMsg({ text: `Application status updated to: ${newStatus.replace('_', ' ')}`, type: 'success' });
+      setSelectedAppForInterview(null);
       loadData();
     } catch (err) {
-      console.error("Failed to update status:", err);
+      setAlertMsg({ text: err.response?.data?.message || "Failed to update application status", type: 'error' });
     }
   };
 
-  const handleScheduleInterviewSubmit = async (e) => {
+  const handleScheduleSubmit = (e) => {
     e.preventDefault();
     if (!selectedAppForInterview) return;
-
-    try {
-      const roomSlug = `Ayush-${user?.companyName?.replace(/[^a-zA-Z0-9]/g, '') || 'Partner'}-${Date.now()}`;
-      const meetingLink = `https://meet.jit.si/${roomSlug}`;
-
-      await applicationService.updateStatus(selectedAppForInterview.id, {
-        status: 'interview_scheduled',
-        interviewDetails: {
-          dateTime: interviewDate || new Date().toISOString(),
-          interviewer: interviewerName,
-          meetingLink,
-          notes: interviewNotes || "Please be ready with your academic transcripts and clinical case portfolio."
-        }
-      });
-
-      setAlertMsg(`Interview scheduled with ${selectedAppForInterview.studentName}! Secure video link generated.`);
-      setSelectedAppForInterview(null);
-      setInterviewDate('');
-      setInterviewNotes('');
-      loadData();
-    } catch (err) {
-      console.error(err);
-    }
+    handleUpdateAppStatus(selectedAppForInterview.id, 'interview_scheduled', {
+      date: interviewDate,
+      meetingUrl,
+      notes: interviewNotes
+    });
   };
 
   return (
     <div className="dashboard-container">
-      {/* Industry Partner Header */}
-      <div className="ayush-hero-banner industry">
-        <div className="hero-left">
-          <div className="avatar-circle industry-avatar">
-            <Building2 size={32} />
-          </div>
-          <div className="hero-info">
-            <div className="name-row">
-              <h2>{user?.companyName || user?.name || "Ayush Corporate Partner"}</h2>
-              <span className="verified-pill">
-                <ShieldCheck size={14} /> Ministry Accredited Partner
-              </span>
-            </div>
-            <p className="academic-line">
-              <span>Ayush Sector: <strong>{user?.ayushSector?.toUpperCase() || 'AYURVEDA'}</strong></span>
-              <span className="divider">|</span>
-              <span>License: <strong>{user?.licenseNumber || 'AYUSH-GMP-2024-VALID'}</strong></span>
+      {/* Header */}
+      <div className="page-header-row">
+        <div>
+          <h2>Industry Recruiter Portal</h2>
+          <p className="page-subtitle">
+            Manage your company profile, publish verified internships & job openings, and review candidate skill matches.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <span className={`status-badge ${isPending ? 'status-review' : 'status-accepted'}`} style={{ fontSize: '13px', padding: '6px 14px' }}>
+            {isPending ? 'Pending Admin Approval' : 'Verified Recruiter'}
+          </span>
+          <button
+            onClick={() => setShowPostModal(true)}
+            disabled={isPending}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+          >
+            <Plus size={16} /> Post Opportunity
+          </button>
+        </div>
+      </div>
+
+      {/* Pending Banner */}
+      {isPending && (
+        <div style={{
+          backgroundColor: '#fffbeb',
+          border: '1px solid #fef3c7',
+          borderRadius: '12px',
+          padding: '18px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          gap: '14px',
+          alignItems: 'flex-start'
+        }}>
+          <AlertTriangle size={22} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h4 style={{ color: '#92400e', margin: '0 0 4px 0', fontSize: '15px' }}>Account Awaiting Verification</h4>
+            <p style={{ color: '#b45309', margin: 0, fontSize: '13px', lineHeight: '1.5' }}>
+              Your recruiter account is pending administrator verification. While pending, you cannot publish live postings.
+              Administrators review new partner accounts promptly.
             </p>
           </div>
         </div>
+      )}
 
-        <div className="hero-right">
-          <button onClick={() => setShowPostModal(true)} className="btn btn-primary">
-            <Plus size={16} /> Post New Ayush Internship
-          </button>
-        </div>
-      </div>
-
-      {alertMsg && (
-        <div className="action-alert-box">
-          <CheckCircle size={18} />
-          <span>{alertMsg}</span>
+      {/* Alert Messages */}
+      {alertMsg.text && (
+        <div className={`alert-box ${alertMsg.type === 'error' ? 'alert-error' : 'alert-success'}`} style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          backgroundColor: alertMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+          color: alertMsg.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${alertMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`
+        }}>
+          {alertMsg.text}
         </div>
       )}
 
-      {/* Metrics Row */}
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon-box green">
-            <Briefcase size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{opportunities.length}</span>
-            <span className="metric-label">Active Postings</span>
-          </div>
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Active Postings</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#0f172a' }}>
+            {opportunities.filter(o => o.status === 'approved').length}
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box amber">
-            <Users size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">{applications.length}</span>
-            <span className="metric-label">Candidate Applicants</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Total Applicants</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#2563eb' }}>
+            {applications.length}
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box teal">
-            <Sparkles size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">
-              {applications.filter(a => a.status === 'shortlisted').length}
-            </span>
-            <span className="metric-label">Shortlisted Talents</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Interviews Scheduled</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#059669' }}>
+            {applications.filter(a => a.status === 'interview_scheduled').length}
+          </h3>
         </div>
-
-        <div className="metric-card">
-          <div className="metric-icon-box gold">
-            <Video size={22} />
-          </div>
-          <div className="metric-content">
-            <span className="metric-val">
-              {applications.filter(a => a.status === 'interview_scheduled').length}
-            </span>
-            <span className="metric-label">Scheduled Interviews</span>
-          </div>
+        <div className="card" style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Offers Extended</span>
+          <h3 style={{ fontSize: '24px', fontWeight: 700, margin: '6px 0 0 0', color: '#7c3aed' }}>
+            {applications.filter(a => ['offered', 'accepted'].includes(a.status)).length}
+          </h3>
         </div>
       </div>
 
-      {/* Candidate Applicants Table */}
-      <div className="content-card">
-        <div className="card-header">
-          <div className="card-title-icon">
-            <Users size={20} className="green-icon" />
-            <h3>Candidate Applicants & AI Skill Match Analysis</h3>
-          </div>
-          <span className="info-tag">{applications.length} Received Applications</span>
-        </div>
+      {/* Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e2e8f0', marginBottom: '20px' }}>
+        <button
+          onClick={() => setActiveTab('applicants')}
+          style={{
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'applicants' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'applicants' ? '#2563eb' : '#64748b',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          Applicants ({applications.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('postings')}
+          style={{
+            padding: '10px 16px',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'postings' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'postings' ? '#2563eb' : '#64748b',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
+        >
+          My Postings ({opportunities.length})
+        </button>
+      </div>
 
-        {applications.length === 0 ? (
-          <p className="empty-text">No applicants yet. Once students apply, their AI skill match analysis will appear here.</p>
-        ) : (
-          <div className="table-wrapper">
-            <table className="ayush-table">
-              <thead>
-                <tr>
-                  <th>Candidate</th>
-                  <th>Applied Position</th>
-                  <th>AI Match Score</th>
-                  <th>Matching Skills</th>
-                  <th>Status</th>
-                  <th>Recruitment Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {applications.map(app => (
-                  <tr key={app.id}>
-                    <td>
-                      <div className="candidate-cell">
-                        <strong>{app.studentName}</strong>
-                        <span>{app.studentDegree}</span>
-                        <span className="sub-cell">{app.studentEmail}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <strong>{app.opportunityTitle}</strong>
-                      <span className="sub-cell">Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
-                    </td>
-                    <td>
-                      <div className={`match-badge ${app.matchScore >= 80 ? 'high' : 'medium'}`}>
-                        <Sparkles size={13} />
-                        <span>{app.matchScore}% Match</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="skills-cell-tags">
-                        {(app.matchingSkills || []).map((sk, i) => (
-                          <span key={i} className="skill-pill-sm match">{sk}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${app.status}`}>
-                        {app.status.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons-cell">
-                        {app.status === 'applied' && (
-                          <button
-                            onClick={() => handleUpdateAppStatus(app.id, 'shortlisted')}
-                            className="btn btn-secondary btn-xs"
-                          >
-                            Shortlist
-                          </button>
+      {/* TAB 1: Applicants Review */}
+      {activeTab === 'applicants' && (
+        <div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>Loading applicants...</div>
+          ) : applications.length === 0 ? (
+            <div className="card" style={{ background: '#fff', padding: '40px', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#64748b' }}>
+              <Users size={40} style={{ opacity: 0.3, marginBottom: '8px' }} />
+              <h4>No Applications Received Yet</h4>
+              <p style={{ fontSize: '13px', color: '#94a3b8' }}>
+                When students apply for your published postings, their profiles and skill matches will appear here.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {applications.map(app => {
+                const snap = app.match_snapshot || {};
+                const score = snap.matchScore;
+                return (
+                  <div
+                    key={app.id}
+                    className="card"
+                    style={{
+                      background: '#fff',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{app.student_name}</h4>
+                        <span className={`status-badge status-${app.status}`} style={{ fontSize: '11px' }}>
+                          {app.status.replace(/_/g, ' ')}
+                        </span>
+                        {score !== null && score !== undefined && (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            backgroundColor: score >= 75 ? '#dcfce7' : score >= 50 ? '#fef3c7' : '#fee2e2',
+                            color: score >= 75 ? '#15803d' : score >= 50 ? '#b45309' : '#b91c1c'
+                          }}>
+                            {score}% Compatibility
+                          </span>
                         )}
+                      </div>
 
+                      <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#64748b' }}>
+                        Applying for: <strong>{app.opportunity_title}</strong> • {app.student_email}
+                      </p>
+
+                      {/* Matching Skills */}
+                      {snap.matchingSkills && snap.matchingSkills.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600 }}>Matched:</span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {snap.matchingSkills.map((sk, idx) => (
+                              <span key={idx} style={{ background: '#dcfce7', color: '#15803d', fontSize: '11px', padding: '1px 6px', borderRadius: '4px' }}>
+                                {sk}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                      {app.status === 'applied' && (
+                        <button
+                          onClick={() => handleUpdateAppStatus(app.id, 'shortlisted')}
+                          className="btn btn-primary btn-sm"
+                          style={{ fontSize: '12px' }}
+                        >
+                          Shortlist
+                        </button>
+                      )}
+
+                      {['applied', 'shortlisted'].includes(app.status) && (
                         <button
                           onClick={() => setSelectedAppForInterview(app)}
-                          className="btn btn-outline btn-xs"
+                          className="btn btn-outline btn-sm"
+                          style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
-                          <Video size={13} /> Schedule Interview
+                          <Calendar size={12} /> Schedule Interview
                         </button>
+                      )}
 
-                        {app.status !== 'offered' && (
-                          <button
-                            onClick={() => handleUpdateAppStatus(app.id, 'offered')}
-                            className="btn btn-primary btn-xs"
-                          >
-                            Offer Position
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      {app.status === 'interview_scheduled' && (
+                        <button
+                          onClick={() => handleUpdateAppStatus(app.id, 'offered')}
+                          className="btn btn-primary btn-sm"
+                          style={{ fontSize: '12px', background: '#059669', borderColor: '#059669' }}
+                        >
+                          Make Offer
+                        </button>
+                      )}
 
-      {/* Active Postings Summary */}
-      <div className="content-card">
-        <div className="card-header">
-          <div className="card-title-icon">
-            <Briefcase size={20} className="green-icon" />
-            <h3>Your Active Ayush Listings</h3>
-          </div>
-          <button onClick={() => setShowPostModal(true)} className="btn btn-outline btn-sm">
-            <Plus size={14} /> Add Listing
-          </button>
-        </div>
-
-        <div className="postings-grid">
-          {opportunities.map(opp => (
-            <div key={opp.id} className="posting-mini-card">
-              <div className="posting-mini-top">
-                <span className="opp-stream-pill">{opp.stream.toUpperCase()}</span>
-                <span className={`status-badge ${opp.status}`}>
-                  {opp.status.toUpperCase()}
-                </span>
-              </div>
-              <h4>{opp.title}</h4>
-              <p className="posting-meta">
-                <span>{opp.type}</span> • <span>{opp.stipend}</span> • <span>{opp.location}</span>
-              </p>
-              <div className="skills-wrap">
-                {(opp.requiredSkills || []).map((s, idx) => (
-                  <span key={idx} className="skill-pill-sm">{s}</span>
-                ))}
-              </div>
+                      {app.status !== 'rejected' && app.status !== 'accepted' && (
+                        <button
+                          onClick={() => handleUpdateAppStatus(app.id, 'rejected')}
+                          className="btn btn-outline btn-sm"
+                          style={{ fontSize: '12px', color: '#dc2626', borderColor: '#fecaca' }}
+                        >
+                          Reject
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Post Internship Modal */}
+      {/* TAB 2: My Postings */}
+      {activeTab === 'postings' && (
+        <div>
+          {opportunities.length === 0 ? (
+            <div className="card" style={{ background: '#fff', padding: '40px', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center', color: '#64748b' }}>
+              <Briefcase size={40} style={{ opacity: 0.3, marginBottom: '8px' }} />
+              <h4>No Opportunities Posted Yet</h4>
+              <p style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Click the "Post Opportunity" button above to publish an internship or job opening.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {opportunities.map(opp => (
+                <div
+                  key={opp.id}
+                  className="card"
+                  style={{
+                    background: '#fff',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span className={`status-badge ${opp.status === 'approved' ? 'status-accepted' : 'status-review'}`} style={{ fontSize: '11px' }}>
+                        {opp.status === 'approved' ? 'Live on Portal' : 'Pending Review'}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>{opp.type} • {opp.location}</span>
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{opp.title}</h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                      {opp.stipend} • {opp.duration} • {opp.openings} openings
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    Created: {new Date(opp.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Post Opportunity Modal */}
       {showPostModal && (
-        <div className="modal-overlay" onClick={() => setShowPostModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Post New Ayush Internship / Placement</h3>
-              <button onClick={() => setShowPostModal(false)} className="modal-close-btn">
-                <X size={20} />
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '28px',
+            width: '100%',
+            maxWidth: '560px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>Post New Opportunity</h3>
+              <button onClick={() => setShowPostModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={20} color="#94a3b8" />
               </button>
             </div>
 
-            <form onSubmit={handlePostSubmit} className="modal-form">
-              <div className="form-group">
-                <label>Position Title</label>
+            <form onSubmit={handlePostSubmit}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Opportunity Title *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Clinical Research Fellow in Dravyaguna"
+                  required
+                  placeholder="e.g. Full-Stack Engineering Intern, Data Analyst"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
 
-              <div className="form-row">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
                 <div className="form-group">
-                  <label>Ayush Discipline</label>
-                  <select
-                    value={formData.stream}
-                    onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
-                  >
-                    <option value="ayurveda">Ayurveda</option>
-                    <option value="yoga_naturopathy">Yoga & Naturopathy</option>
-                    <option value="unani">Unani Medicine</option>
-                    <option value="siddha">Siddha Medicine</option>
-                    <option value="homeopathy">Homeopathy</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Engagement Type</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Opportunity Type</label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   >
-                    <option value="Internship (Clinical)">Internship (Clinical Hospital)</option>
-                    <option value="Research Fellowship">Research Fellowship (R&D Lab)</option>
-                    <option value="Placement / PPO">Full-Time Placement / PPO</option>
-                    <option value="Manufacturing / QC">Manufacturing & QC (GMP)</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Full-time">Full-time Job</option>
+                    <option value="Apprenticeship">Apprenticeship</option>
+                    <option value="Project">Live Project</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
-                  <label>Location</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Location</label>
                   <input
                     type="text"
+                    placeholder="e.g. Bengaluru / Remote"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="e.g. Delhi NCR / Haridwar / On-site"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
                 </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
                 <div className="form-group">
-                  <label>Monthly Stipend / Compensation</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Stipend / Salary</label>
                   <input
                     type="text"
+                    placeholder="e.g. ₹25,000 / mo"
                     value={formData.stipend}
                     onChange={(e) => setFormData({ ...formData, stipend: e.target.value })}
-                    placeholder="e.g. ₹25,000 / month"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
-                  <label>Duration</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Duration</label>
                   <input
                     type="text"
+                    placeholder="e.g. 3 Months"
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="e.g. 6 Months"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Number of Openings</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Openings</label>
                   <input
                     type="number"
+                    min="1"
                     value={formData.openings}
-                    onChange={(e) => setFormData({ ...formData, openings: e.target.value })}
-                    min={1}
+                    onChange={(e) => setFormData({ ...formData, openings: parseInt(e.target.value) || 1 })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Required Ayush Skills (comma separated for AI matching)</label>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  Required Skills (comma-separated) *
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Panchakarma Procedures, Dravyaguna (Pharmacognosy), Nadi Pariksha"
+                  required
+                  placeholder="e.g. React, Node.js, PostgreSQL, Git"
                   value={formData.requiredSkills}
                   onChange={(e) => setFormData({ ...formData, requiredSkills: e.target.value })}
-                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Job Description & Responsibilities</label>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Job Description</label>
                 <textarea
                   rows={3}
+                  placeholder="Describe day-to-day responsibilities, learning outcomes, and expectations..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe patient exposure, lab instrumentation, research scope..."
-                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
                 />
               </div>
 
-              <div className="modal-footer">
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Eligibility Criteria</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Pre-final or final year B.Tech / BCA students"
+                  value={formData.eligibility}
+                  onChange={(e) => setFormData({ ...formData, eligibility: e.target.value })}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" onClick={() => setShowPostModal(false)} className="btn btn-outline">
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Publish Internship
+                  Submit for Approval
                 </button>
               </div>
             </form>
@@ -469,59 +570,73 @@ export default function IndustryDashboard() {
 
       {/* Schedule Interview Modal */}
       {selectedAppForInterview && (
-        <div className="modal-overlay" onClick={() => setSelectedAppForInterview(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Schedule Video Interview</h3>
-              <button onClick={() => setSelectedAppForInterview(null)} className="modal-close-btn">
-                <X size={20} />
-              </button>
-            </div>
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '100%',
+            maxWidth: '480px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '18px' }}>Schedule Interview</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0' }}>
+              Candidate: <strong>{selectedAppForInterview.student_name}</strong> ({selectedAppForInterview.opportunity_title})
+            </p>
 
-            <form onSubmit={handleScheduleInterviewSubmit} className="modal-form">
-              <p className="modal-subtext">
-                Candidate: <strong>{selectedAppForInterview.studentName}</strong> ({selectedAppForInterview.studentDegree})
-                <br />
-                Position: <strong>{selectedAppForInterview.opportunityTitle}</strong>
-              </p>
-
-              <div className="form-group">
-                <label>Interview Date & Time</label>
+            <form onSubmit={handleScheduleSubmit}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Date & Time *</label>
                 <input
                   type="datetime-local"
+                  required
                   value={interviewDate}
                   onChange={(e) => setInterviewDate(e.target.value)}
-                  required
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Interviewer Name / Designation</label>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  Meeting URL (Google Meet / Zoom / Teams)
+                </label>
                 <input
-                  type="text"
-                  value={interviewerName}
-                  onChange={(e) => setInterviewerName(e.target.value)}
-                  placeholder="e.g. Dr. Singhania, Head of Clinical Research"
-                  required
+                  type="url"
+                  placeholder="https://meet.google.com/xyz-abcd-efg"
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Preparation Notes for Candidate</label>
+              <div className="form-group" style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Notes for Candidate</label>
                 <textarea
-                  rows={3}
+                  rows={2}
+                  placeholder="Any preparations needed, coding environment, or technical agenda..."
                   value={interviewNotes}
                   onChange={(e) => setInterviewNotes(e.target.value)}
-                  placeholder="e.g. Please bring your thesis summary and clinical case log book."
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', resize: 'vertical' }}
                 />
               </div>
 
-              <div className="modal-footer">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" onClick={() => setSelectedAppForInterview(null)} className="btn btn-outline">
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  <Video size={16} /> Confirm & Generate Video Call Link
+                  Confirm & Schedule
                 </button>
               </div>
             </form>
