@@ -23,3 +23,7 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Legacy demo data
+server/data.json
+

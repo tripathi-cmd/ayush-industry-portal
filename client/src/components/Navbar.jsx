@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Building2, 
@@ -11,60 +11,31 @@ import {
   Bell, 
   LogOut, 
   Clock, 
-  Sparkles 
+  Sparkles,
+  Compass,
+  CheckCircle
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, logout, quickLogin, notifications, unreadNotificationsCount, markNotificationRead } = useAuth();
-  const navigate = useNavigate();
+  const { user, logout, notifications, unreadNotificationsCount, markNotificationRead } = useAuth();
   const location = useLocation();
   const [showNotifs, setShowNotifs] = useState(false);
-  const [switchingRole, setSwitchingRole] = useState(false);
-
-  const handleQuickSwitch = async (role) => {
-    setSwitchingRole(true);
-    try {
-      await quickLogin(role);
-      if (role === 'student') navigate('/student');
-      else if (role === 'industry') navigate('/industry');
-      else if (role === 'admin') navigate('/admin');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSwitchingRole(false);
-    }
-  };
 
   const isActive = (path) => location.pathname === path;
 
   return (
     <header className="ayush-navbar-wrapper">
-      {/* Top Ministry Banner */}
-      <div className="gov-topbar">
-        <div className="gov-topbar-content">
-          <div className="gov-left">
-            <span className="gov-flag">🇮🇳</span>
-            <span>Government of India • Ministry of Ayush (आयुष मंत्रालय)</span>
-          </div>
-          <div className="gov-right">
-            <span>National Ayush Mission (NAM)</span>
-            <span className="divider">|</span>
-            <span className="helpline">Toll-Free Helpline: 14443</span>
-          </div>
-        </div>
-      </div>
-
       {/* Main Navigation Bar */}
       <nav className="ayush-nav">
         <div className="nav-container">
           {/* Logo & Portal Title */}
           <Link to="/" className="brand-logo">
-            <div className="brand-emblem">
-              <span className="ayush-leaf">🌿</span>
+            <div className="brand-emblem" style={{ background: '#eff6ff', borderColor: '#3b82f6' }}>
+              <Compass size={22} color="#2563eb" />
             </div>
             <div className="brand-text">
-              <span className="brand-title">Ministry of Ayush</span>
-              <span className="brand-subtitle">Industry Partnership & Skill Portal</span>
+              <span className="brand-title" style={{ color: '#1e3a8a' }}>Skill Connect</span>
+              <span className="brand-subtitle">Academia–Industry Collaboration Portal</span>
             </div>
           </Link>
 
@@ -97,15 +68,28 @@ export default function Navbar() {
                   </>
                 )}
 
-                {user.role === 'industry' && (
+                {user.role === 'recruiter' && (
                   <>
-                    <Link to="/industry" className={`nav-link ${isActive('/industry') ? 'active' : ''}`}>
+                    <Link to="/recruiter" className={`nav-link ${isActive('/recruiter') ? 'active' : ''}`}>
                       <Building2 size={18} />
-                      <span>Partner Portal</span>
+                      <span>Recruiter Portal</span>
                     </Link>
                     <Link to="/opportunities" className={`nav-link ${isActive('/opportunities') ? 'active' : ''}`}>
                       <Briefcase size={18} />
-                      <span>Browse Internships</span>
+                      <span>Opportunities</span>
+                    </Link>
+                    <Link to="/applications" className={`nav-link ${isActive('/applications') ? 'active' : ''}`}>
+                      <FileText size={18} />
+                      <span>Applicants</span>
+                    </Link>
+                  </>
+                )}
+
+                {user.role === 'mentor' && (
+                  <>
+                    <Link to="/mentor" className={`nav-link ${isActive('/mentor') ? 'active' : ''}`}>
+                      <GraduationCap size={18} />
+                      <span>Mentor Portal</span>
                     </Link>
                   </>
                 )}
@@ -114,11 +98,15 @@ export default function Navbar() {
                   <>
                     <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`}>
                       <ShieldCheck size={18} />
-                      <span>Ministry Admin</span>
+                      <span>Admin Console</span>
                     </Link>
                     <Link to="/opportunities" className={`nav-link ${isActive('/opportunities') ? 'active' : ''}`}>
                       <Briefcase size={18} />
                       <span>All Listings</span>
+                    </Link>
+                    <Link to="/applications" className={`nav-link ${isActive('/applications') ? 'active' : ''}`}>
+                      <FileText size={18} />
+                      <span>Applications</span>
                     </Link>
                   </>
                 )}
@@ -127,7 +115,7 @@ export default function Navbar() {
               <>
                 <Link to="/opportunities" className="nav-link">
                   <Briefcase size={18} />
-                  <span>Browse Internships</span>
+                  <span>Browse Opportunities</span>
                 </Link>
               </>
             )}
@@ -135,35 +123,6 @@ export default function Navbar() {
 
           {/* Right Action Area */}
           <div className="nav-actions">
-            {/* Demo Quick Switcher */}
-            <div className="demo-switcher">
-              <span className="demo-label">Demo Role:</span>
-              <button 
-                onClick={() => handleQuickSwitch('student')} 
-                className={`demo-btn ${user?.role === 'student' ? 'active' : ''}`}
-                disabled={switchingRole}
-                title="Switch to Dr. Ananya (Student)"
-              >
-                Student
-              </button>
-              <button 
-                onClick={() => handleQuickSwitch('industry')} 
-                className={`demo-btn ${user?.role === 'industry' ? 'active' : ''}`}
-                disabled={switchingRole}
-                title="Switch to Dabur R&D (Industry)"
-              >
-                Industry
-              </button>
-              <button 
-                onClick={() => handleQuickSwitch('admin')} 
-                className={`demo-btn ${user?.role === 'admin' ? 'active' : ''}`}
-                disabled={switchingRole}
-                title="Switch to Ministry Admin"
-              >
-                Admin
-              </button>
-            </div>
-
             {user ? (
               <div className="user-area">
                 {/* Notification Bell */}
@@ -184,11 +143,11 @@ export default function Navbar() {
                     <div className="notif-dropdown">
                       <div className="notif-header">
                         <h4>Notifications & Alerts</h4>
-                        <span className="notif-count">{notifications.length} alerts</span>
+                        <span className="notif-count">{notifications.length} total</span>
                       </div>
                       <div className="notif-list">
                         {notifications.length === 0 ? (
-                          <div className="notif-empty">No new notifications</div>
+                          <div className="notif-empty">No notifications yet</div>
                         ) : (
                           notifications.map((n) => (
                             <div 
@@ -202,7 +161,7 @@ export default function Navbar() {
                               </div>
                               <p className="notif-msg">{n.message}</p>
                               <span className="notif-time">
-                                <Clock size={12} /> {new Date(n.timestamp).toLocaleDateString()}
+                                <Clock size={12} /> {new Date(n.created_at || n.timestamp).toLocaleDateString()}
                               </span>
                             </div>
                           ))
@@ -214,11 +173,11 @@ export default function Navbar() {
 
                 {/* User Info & Logout */}
                 <div className="user-badge">
-                  <div className="user-avatar">
-                    {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                  <div className="user-avatar" style={{ background: '#2563eb' }}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div className="user-details">
-                    <span className="user-name">{user.name || user.companyName}</span>
+                    <span className="user-name">{user.name || user.profile?.companyName || user.email}</span>
                     <span className="user-role-tag">{user.role.toUpperCase()}</span>
                   </div>
                 </div>

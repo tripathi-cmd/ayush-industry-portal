@@ -1,562 +1,177 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
+import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_FILE = path.join(__dirname, 'data.json');
+const { Pool } = pg;
 
-// Attempt MongoDB connection if MONGODB_URI is provided
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✓ Connected to MongoDB Atlas cluster'))
-    .catch(err => console.warn('(!) MongoDB URI provided but connection failed. Using local persistent store:', err.message));
-} else {
-  console.log('ℹ Running with persistent JSON store (server/data.json). To use MongoDB Atlas, set MONGODB_URI in server/.env');
+if (!process.env.DATABASE_URL) {
+  console.error('FATAL: DATABASE_URL environment variable is required. Set it to your Neon PostgreSQL connection string.');
+  process.exit(1);
 }
 
-// Default initial dataset
-const generateInitialData = () => {
-  const salt = bcrypt.genSaltSync(10);
-  const studentHash = bcrypt.hashSync('ayush123', salt);
-  const industryHash = bcrypt.hashSync('ayush123', salt);
-  const adminHash = bcrypt.hashSync('admin123', salt);
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
 
-  return {
-    users: [
-      {
-        id: "usr_student_1",
-        email: "student@ayush.gov.in",
-        password: studentHash,
-        role: "student",
-        name: "Dr. Ananya Sharma",
-        stream: "ayurveda",
-        degree: "BAMS (Final Year)",
-        institution: "National Institute of Ayurveda (NIA), Jaipur",
-        phone: "+91 98765 43210",
-        location: "Jaipur, Rajasthan",
-        bio: "Aspiring Ayurvedic physician with clinical interests in Panchakarma procedures, Dravyaguna research, and evidence-based herbal formulations.",
-        skills: [
-          "Panchakarma Procedures",
-          "Nadi Pariksha (Pulse Diagnosis)",
-          "Dravyaguna (Pharmacognosy)",
-          "Charaka Samhita Protocols",
-          "Clinical Case Documentation",
-          "Ayurvedic Dietetics (Pathya-Apathya)"
-        ],
-        assessmentScores: [
-          {
-            stream: "ayurveda",
-            title: "Ayurveda Clinical & Pharmacognosy Competency",
-            score: 88,
-            passed: true,
-            completedAt: "2026-08-25T10:30:00.000Z",
-            badge: "Certified Ayush Clinical Apprentice"
-          }
-        ],
-        documents: [
-          {
-            id: "doc_1",
-            title: "BAMS Provisional Registration & Marks Transcript",
-            type: "Academic Certificate",
-            status: "verified",
-            verifiedAt: "2026-08-20"
-          }
-        ],
-        createdAt: "2026-08-01T00:00:00.000Z"
-      },
-      {
-        id: "usr_industry_1",
-        email: "recruiter@dabur.com",
-        password: industryHash,
-        role: "industry",
-        companyName: "Dabur Research & Development Centre",
-        ayushSector: "ayurveda",
-        contactPerson: "Rajeev Singhania (Head of Academic Partnerships)",
-        phone: "+91 98112 34567",
-        location: "Ghaziabad, Uttar Pradesh",
-        website: "https://www.dabur.com/research",
-        licenseNumber: "AYUSH-DL-UP-2019-9482",
-        gmpCertified: true,
-        verificationStatus: "verified", // verified | pending | rejected
-        verifiedAt: "2026-07-15",
-        about: "Premier research arm of Dabur India Ltd, focusing on classical Ayurvedic drug discovery, standardisation, toxicology, and clinical documentation.",
-        createdAt: "2026-07-10T00:00:00.000Z"
-      },
-      {
-        id: "usr_industry_2",
-        email: "partnerships@aryavaidyasala.com",
-        password: industryHash,
-        role: "industry",
-        companyName: "Arya Vaidya Sala, Kottakkal",
-        ayushSector: "ayurveda",
-        contactPerson: "Dr. P. Madhavan",
-        phone: "+91 483 2742216",
-        location: "Kottakkal, Malappuram, Kerala",
-        website: "https://www.aryavaidyasala.com",
-        licenseNumber: "AYUSH-KL-GMP-83719",
-        gmpCertified: true,
-        verificationStatus: "verified",
-        verifiedAt: "2026-07-18",
-        about: "Century-old charitable Ayurvedic institution renowned for authentic classical treatments, Panchakarma hospitals, and medicine manufacturing.",
-        createdAt: "2026-07-12T00:00:00.000Z"
-      },
-      {
-        id: "usr_industry_3",
-        email: "research@svyasa.edu.in",
-        password: industryHash,
-        role: "industry",
-        companyName: "S-VYASA Yoga University & Health Care",
-        ayushSector: "yoga_naturopathy",
-        contactPerson: "Prof. Gayatri Ramanathan",
-        phone: "+91 80 2263 9999",
-        location: "Bengaluru, Karnataka",
-        website: "https://svyasa.edu.in",
-        licenseNumber: "AYUSH-KA-YOGA-1029",
-        gmpCertified: true,
-        verificationStatus: "verified",
-        verifiedAt: "2026-07-20",
-        about: "Deemed-to-be-University pioneering scientific research in Yoga, Naturopathic therapies, and non-communicable disease reversal.",
-        createdAt: "2026-07-15T00:00:00.000Z"
-      },
-      {
-        id: "usr_industry_4",
-        email: "hr@patanjaliresearch.com",
-        password: industryHash,
-        role: "industry",
-        companyName: "Patanjali Research Foundation Trust",
-        ayushSector: "ayurveda",
-        contactPerson: "Vikram Malhotra",
-        phone: "+91 1334 240008",
-        location: "Haridwar, Uttarakhand",
-        website: "https://patanjali.res.in",
-        licenseNumber: "AYUSH-UK-GMP-44912",
-        gmpCertified: true,
-        verificationStatus: "pending", // demonstration of pending approval
-        about: "Dedicated research institute conducting scientific validation of Ayurvedic herbal compounds and traditional formulations.",
-        createdAt: "2026-09-01T00:00:00.000Z"
-      },
-      {
-        id: "usr_admin_1",
-        email: "admin@ayush.gov.in",
-        password: adminHash,
-        role: "admin",
-        name: "Ministry Verification Directorate",
-        department: "Ayush Academia-Industry Collaborative Cell",
-        officialId: "GOI-AYUSH-ADM-042",
-        createdAt: "2026-06-01T00:00:00.000Z"
-      }
-    ],
-    opportunities: [
-      {
-        id: "opp_1",
-        postedBy: "usr_industry_1",
-        companyName: "Dabur Research & Development Centre",
-        title: "Clinical Research & Pharmacognosy Fellow",
-        stream: "ayurveda",
-        type: "Internship (Full-Time)",
-        location: "Ghaziabad / Delhi NCR (On-site)",
-        stipend: "₹25,000 / month",
-        duration: "6 Months",
-        openings: 4,
-        status: "approved", // approved | pending | rejected
-        requiredSkills: [
-          "Dravyaguna (Pharmacognosy)",
-          "Clinical Case Documentation",
-          "Classical Herb Identification",
-          "Rasa Shastra & Bhaishajya Kalpana"
-        ],
-        description: "Join Dabur's core research laboratory to evaluate traditional Ayurvedic formulations. Hands-on exposure to thin-layer chromatography, phytochemical screening, and clinical data registry adhering to Ministry of Ayush ethical standards.",
-        eligibility: "BAMS Final Year or MD (Ayurveda) candidates with foundational knowledge of classical texts and pharmacological analysis.",
-        postedAt: "2026-08-10T00:00:00.000Z"
-      },
-      {
-        id: "opp_2",
-        postedBy: "usr_industry_2",
-        companyName: "Arya Vaidya Sala, Kottakkal",
-        title: "Panchakarma Clinical Resident Trainee",
-        stream: "ayurveda",
-        type: "Internship (Hospital-Based)",
-        location: "Kottakkal, Kerala",
-        stipend: "₹22,000 / month + Accommodation",
-        duration: "6 Months",
-        openings: 6,
-        status: "approved",
-        requiredSkills: [
-          "Panchakarma Procedures",
-          "Nadi Pariksha (Pulse Diagnosis)",
-          "Charaka Samhita Protocols",
-          "Ayurvedic Dietetics (Pathya-Apathya)"
-        ],
-        description: "Intensive clinical immersion under senior Vaidyas at Kottakkal hospital. Trainees will supervise Purvakarma, Pradhanakarma (Vamana, Virechana, Vasti), and Paschatkarma dietary regimens.",
-        eligibility: "BAMS Graduates / Interns holding provisional registration.",
-        postedAt: "2026-08-15T00:00:00.000Z"
-      },
-      {
-        id: "opp_3",
-        postedBy: "usr_industry_3",
-        companyName: "S-VYASA Yoga University & Health Care",
-        title: "Integrative Yoga Therapy Specialist",
-        stream: "yoga_naturopathy",
-        type: "Fellowship (Clinical)",
-        location: "Bengaluru, Karnataka",
-        stipend: "₹20,000 / month",
-        duration: "3 Months",
-        openings: 3,
-        status: "approved",
-        requiredSkills: [
-          "Therapeutic Asana Alignment",
-          "Pranayama & Kriya Protocols",
-          "Yoga Nidra & Stress Management",
-          "Physiological Assessment of Vital Signs"
-        ],
-        description: "Work alongside physicians administering evidence-backed Yoga therapy protocols for metabolic syndrome, hypertension, and autoimmune recovery at Prashanti Kuteeram campus.",
-        eligibility: "BNYS or M.Sc Yoga Therapy students.",
-        postedAt: "2026-08-18T00:00:00.000Z"
-      },
-      {
-        id: "opp_4",
-        postedBy: "usr_industry_1",
-        companyName: "Dabur Research & Development Centre",
-        title: "Ayurvedic Formulation & GMP Quality Associate",
-        stream: "ayurveda",
-        type: "Placement (Pre-Placement Offer)",
-        location: "Sahibabad, UP",
-        stipend: "₹30,000 / month (PPO CTC ₹5.5 LPA)",
-        duration: "6 Months",
-        openings: 2,
-        status: "approved",
-        requiredSkills: [
-          "GMP Compliance in Ayurvedic Drug Manufacturing",
-          "Rasa Shastra & Bhaishajya Kalpana",
-          "Dravyaguna (Pharmacognosy)"
-        ],
-        description: "Assist Quality Assurance leads in standardization of Asava-Arishta, Bhasma, and herbal tablets ensuring Schedule T (GMP) compliance.",
-        eligibility: "BAMS / B.Pharm (Ayurveda) / M.Sc Pharmacognosy.",
-        postedAt: "2026-08-22T00:00:00.000Z"
-      },
-      {
-        id: "opp_5",
-        postedBy: "usr_industry_4",
-        companyName: "Patanjali Research Foundation Trust",
-        title: "Herbal Bio-Activity & Botanical QC Researcher",
-        stream: "ayurveda",
-        type: "Research Internship",
-        location: "Haridwar, Uttarakhand",
-        stipend: "₹24,000 / month",
-        duration: "6 Months",
-        openings: 5,
-        status: "pending", // Requires Ministry approval
-        requiredSkills: [
-          "Classical Herb Identification",
-          "Dravyaguna (Pharmacognosy)",
-          "Clinical Case Documentation"
-        ],
-        description: "High-throughput screening of Himalayan medicinal botanicals for anti-inflammatory properties.",
-        eligibility: "Final year BAMS or post-graduates in Dravyaguna.",
-        postedAt: "2026-09-02T00:00:00.000Z"
-      }
-    ],
-    applications: [
-      {
-        id: "app_1",
-        opportunityId: "opp_1",
-        studentId: "usr_student_1",
-        studentName: "Dr. Ananya Sharma",
-        studentEmail: "student@ayush.gov.in",
-        studentDegree: "BAMS (Final Year)",
-        companyName: "Dabur Research & Development Centre",
-        opportunityTitle: "Clinical Research & Pharmacognosy Fellow",
-        matchScore: 92,
-        matchingSkills: [
-          "Dravyaguna (Pharmacognosy)",
-          "Clinical Case Documentation"
-        ],
-        missingSkills: [
-          "Classical Herb Identification",
-          "Rasa Shastra & Bhaishajya Kalpana"
-        ],
-        status: "shortlisted", // applied | under_review | shortlisted | interview_scheduled | offered | rejected
-        appliedAt: "2026-08-16T11:00:00.000Z",
-        interviewDetails: {
-          dateTime: "2026-09-15T14:30:00+05:30",
-          interviewer: "Dr. Singhania, Head of R&D",
-          meetingLink: "https://meet.jit.si/Ayush-Partnership-Dabur-Ananya",
-          notes: "Please prepare a 5-minute presentation on your final year Dravyaguna project."
-        }
-      },
-      {
-        id: "app_2",
-        opportunityId: "opp_2",
-        studentId: "usr_student_1",
-        studentName: "Dr. Ananya Sharma",
-        studentEmail: "student@ayush.gov.in",
-        studentDegree: "BAMS (Final Year)",
-        companyName: "Arya Vaidya Sala, Kottakkal",
-        opportunityTitle: "Panchakarma Clinical Resident Trainee",
-        matchScore: 95,
-        matchingSkills: [
-          "Panchakarma Procedures",
-          "Nadi Pariksha (Pulse Diagnosis)",
-          "Charaka Samhita Protocols",
-          "Ayurvedic Dietetics (Pathya-Apathya)"
-        ],
-        missingSkills: [],
-        status: "interview_scheduled",
-        appliedAt: "2026-08-20T14:20:00.000Z",
-        interviewDetails: {
-          dateTime: "2026-09-12T11:00:00+05:30",
-          interviewer: "Dr. P. Madhavan (Chief Physician)",
-          meetingLink: "https://meet.jit.si/Ayush-Kottakkal-Panchakarma-Review",
-          notes: "Case study evaluation on Snehana-Swedana protocols."
-        }
-      }
-    ],
-    assessments: [
-      {
-        id: "asm_ayurveda_1",
-        stream: "ayurveda",
-        title: "Ayurveda Clinical & Pharmacognosy Competency",
-        durationMinutes: 15,
-        passingScore: 70,
-        description: "Official Ministry of Ayush standardized assessment assessing Charaka Samhita diagnostics, Dravyaguna properties (Rasa, Guna, Virya, Vipaka), and Panchakarma execution protocols.",
-        questions: [
-          {
-            id: 1,
-            question: "Which Panchakarma procedure is indicated as the prime therapy for aggravated Pitta Dosha?",
-            options: [
-              "Vamana (Therapeutic emesis)",
-              "Virechana (Therapeutic purgation)",
-              "Basti (Medicated enema)",
-              "Nasya (Nasal administration)"
-            ],
-            correctAnswer: 1,
-            rationale: "According to Charaka Samhita, Virechana is the supreme therapy for eliminating Pitta from its root seat (Amashaya/Grahani)."
-          },
-          {
-            id: 2,
-            question: "In Dravyaguna, what is the Vipaka of Madhura (Sweet) Rasa predominantly?",
-            options: [
-              "Madhura",
-              "Amla",
-              "Katu",
-              "Tikta"
-            ],
-            correctAnswer: 0,
-            rationale: "Substances with Madhura and Lavana rasa generally undergo Madhura Vipaka after digestion."
-          },
-          {
-            id: 3,
-            question: "Which classical formulation type requires Schedule T (GMP) fermentation monitoring for self-generated alcohol content?",
-            options: [
-              "Churna",
-              "Asava & Arishta",
-              "Taila",
-              "Bhasma"
-            ],
-            correctAnswer: 1,
-            rationale: "Asavas and Arishtas are classical hydro-alcoholic preparations developed through natural Sandhana Kalpana (fermentation)."
-          },
-          {
-            id: 4,
-            question: "Which of the following is considered a Pradhana Snehana Dravya with optimal retention capacity?",
-            options: [
-              "Taila (Sesame oil)",
-              "Ghrita (Clarified butter / Ghee)",
-              "Vasa (Animal fat)",
-              "Majja (Bone marrow)"
-            ],
-            correctAnswer: 1,
-            rationale: "Ghrita is Samskaranuvartana (inherits qualities of herbs without losing its own), making it the superior Snehana Dravya."
-          },
-          {
-            id: 5,
-            question: "What is the primary diagnostic observation assessed in Nadi Pariksha for Vataja Nadi?",
-            options: [
-              "Mandooka Gati (Frog-like hopping)",
-              "Sarpa Gati (Serpentine wavy motion)",
-              "Hamsa Gati (Graceful swan-like motion)",
-              "Kaka Gati (Crow-like jerky motion)"
-            ],
-            correctAnswer: 1,
-            rationale: "Vata dominance presents as Sarpa-Jalauka Gati (serpentine, swift, curved pulse)."
-          }
-        ]
-      },
-      {
-        id: "asm_yoga_1",
-        stream: "yoga_naturopathy",
-        title: "Therapeutic Yoga & Naturopathy Diagnostics",
-        durationMinutes: 15,
-        passingScore: 70,
-        description: "Assesses knowledge of therapeutic asana adjustments, Shatkarma purification, hydrotherapy temperature ranges, and yogic lifestyle intervention.",
-        questions: [
-          {
-            id: 1,
-            question: "Which Shatkarma technique is specifically recommended for chronic sinusitis and upper respiratory mucus clearance?",
-            options: [
-              "Jala Neti",
-              "Nauli",
-              "Trataka",
-              "Basti"
-            ],
-            correctAnswer: 0,
-            rationale: "Jala Neti flushes the nasal cavity and desensitizes respiratory mucosa."
-          },
-          {
-            id: 2,
-            question: "In Naturopathy, what physiological response does a cold hip bath (55°F - 65°F) induce?",
-            options: [
-              "Pelvic vasodilation and muscle relaxation",
-              "Pelvic vasoconstriction followed by reactionary hyperemia and visceral tone improvement",
-              "Severe blood pressure drop",
-              "Sudden lymphatic stasis"
-            ],
-            correctAnswer: 1,
-            rationale: "Cold hydrotherapy initiates tonic vasoconstriction and invigorating reflexive blood circulation to reproductive and lower bowel organs."
-          },
-          {
-            id: 3,
-            question: "Which Asana is contraindicated for individuals suffering from severe lumbar disc herniation (Sciatica)?",
-            options: [
-              "Bhujangasana (Gentle Cobra)",
-              "Paschimottanasana (Seated Forward Bend)",
-              "Shalabhasana (Locust pose)",
-              "Makarásana (Crocodile pose)"
-            ],
-            correctAnswer: 1,
-            rationale: "Intense forward flexion exerts high intradiscal pressure on posterior lumbar nerve roots."
-          }
-        ]
-      },
-      {
-        id: "asm_homeopathy_1",
-        stream: "homeopathy",
-        title: "Homeopathic Materia Medica & Repertorization",
-        durationMinutes: 15,
-        passingScore: 70,
-        description: "Evaluates mastery in case analysis, Kent's repertory schema, Organon §153 characteristic symptoms, and potency selection.",
-        questions: [
-          {
-            id: 1,
-            question: "According to Dr. Samuel Hahnemann's Organon §153, which symptoms guide the homeopath to the similimum?",
-            options: [
-              "Common pathology symptoms shared by all patients",
-              "Strange, rare, peculiar, and characteristic symptoms",
-              "Laboratory diagnostic numbers only",
-              "Routine anatomical signs"
-            ],
-            correctAnswer: 1,
-            rationale: "Organon §153 clearly dictates that more striking, singular, uncommon and peculiar symptoms correspond to the medicinal drug."
-          },
-          {
-            id: 2,
-            question: "Which medicine has key characteristic: 'Great thirst for small quantities of cold water at frequent intervals with extreme prostration and restlessness'?",
-            options: [
-              "Bryonia Alba",
-              "Arsenicum Album",
-              "Pulsatilla Pratensis",
-              "Nux Vomica"
-            ],
-            correctAnswer: 1,
-            rationale: "Arsenicum Album exhibits classic agonizing restlessness with sipping cold water."
-          }
-        ]
-      }
-    ],
-    notifications: [
-      {
-        id: "notif_1",
-        userId: "usr_student_1",
-        title: "Interview Scheduled with Dabur R&D",
-        message: "Your application for Clinical Research Fellow was shortlisted! Interview date: Sep 15, 2:30 PM.",
-        read: false,
-        timestamp: "2026-09-02T10:00:00.000Z"
-      },
-      {
-        id: "notif_2",
-        userId: "usr_student_1",
-        title: "New Internship Matching Your Skills",
-        message: "Arya Vaidya Sala Kottakkal posted 'Panchakarma Resident Trainee' with a 95% skill match.",
-        read: true,
-        timestamp: "2026-08-28T14:15:00.000Z"
-      },
-      {
-        id: "notif_3",
-        userId: "usr_admin_1",
-        title: "Pending Partner Approval",
-        message: "Patanjali Research Foundation submitted AYUSH license verification request.",
-        read: false,
-        timestamp: "2026-09-01T09:00:00.000Z"
-      }
-    ]
-  };
-};
+pool.on('error', (err) => {
+  console.error('Unexpected pool error:', err.message);
+});
 
-class Database {
-  constructor() {
-    this.init();
-  }
-
-  init() {
-    try {
-      if (!fs.existsSync(DATA_FILE)) {
-        const initialData = generateInitialData();
-        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
-      }
-    } catch (err) {
-      console.error("Error initializing persistent store:", err);
-    }
-  }
-
-  read() {
-    try {
-      if (!fs.existsSync(DATA_FILE)) {
-        this.init();
-      }
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(raw);
-    } catch (err) {
-      console.error("Failed to read database:", err);
-      return generateInitialData();
-    }
-  }
-
-  write(data) {
-    try {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-      return true;
-    } catch (err) {
-      console.error("Failed to write database:", err);
-      return false;
-    }
-  }
-
-  // Helper collections
-  get users() {
-    return this.read().users || [];
-  }
-
-  get opportunities() {
-    return this.read().opportunities || [];
-  }
-
-  get applications() {
-    return this.read().applications || [];
-  }
-
-  get assessments() {
-    return this.read().assessments || [];
-  }
-
-  get notifications() {
-    return this.read().notifications || [];
-  }
+/** Convenience wrapper – use query(sql, params) everywhere */
+export async function query(sql, params) {
+  const result = await pool.query(sql, params);
+  return result;
 }
 
-export const db = new Database();
+/** Create all tables if they don't exist. Called once at startup. */
+export async function initDb() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id            TEXT PRIMARY KEY,
+        email         TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role          TEXT NOT NULL CHECK (role IN ('student','recruiter','mentor','admin')),
+        name          TEXT NOT NULL DEFAULT '',
+        approval      TEXT NOT NULL DEFAULT 'approved' CHECK (approval IN ('approved','pending','rejected')),
+        profile       JSONB NOT NULL DEFAULT '{}',
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        revoked    BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS assessments (
+        id          TEXT PRIMARY KEY,
+        category    TEXT NOT NULL DEFAULT 'general',
+        title       TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        duration_minutes INTEGER NOT NULL DEFAULT 15,
+        passing_score    INTEGER NOT NULL DEFAULT 70,
+        questions   JSONB NOT NULL DEFAULT '[]',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS assessment_attempts (
+        id             TEXT PRIMARY KEY,
+        user_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        assessment_id  TEXT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+        answers        JSONB NOT NULL DEFAULT '{}',
+        score          INTEGER NOT NULL DEFAULT 0,
+        passed         BOOLEAN NOT NULL DEFAULT false,
+        completed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(user_id, assessment_id)
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS opportunities (
+        id              TEXT PRIMARY KEY,
+        posted_by       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        company_name    TEXT NOT NULL DEFAULT '',
+        title           TEXT NOT NULL,
+        type            TEXT NOT NULL DEFAULT 'Internship',
+        location        TEXT NOT NULL DEFAULT 'Remote',
+        stipend         TEXT NOT NULL DEFAULT 'Unpaid',
+        duration        TEXT NOT NULL DEFAULT '3 Months',
+        openings        INTEGER NOT NULL DEFAULT 1,
+        status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('approved','pending','rejected')),
+        required_skills JSONB NOT NULL DEFAULT '[]',
+        description     TEXT NOT NULL DEFAULT '',
+        eligibility     TEXT NOT NULL DEFAULT '',
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_opp_posted_by ON opportunities(posted_by);
+      CREATE INDEX IF NOT EXISTS idx_opp_status ON opportunities(status);
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS applications (
+        id               TEXT PRIMARY KEY,
+        student_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        opportunity_id   TEXT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+        status           TEXT NOT NULL DEFAULT 'applied' CHECK (status IN ('applied','under_review','shortlisted','interview_scheduled','offered','accepted','rejected')),
+        match_snapshot   JSONB NOT NULL DEFAULT '{}',
+        interview_details JSONB,
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(student_id, opportunity_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_app_student ON applications(student_id);
+      CREATE INDEX IF NOT EXISTS idx_app_opportunity ON applications(opportunity_id);
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mentorship_assignments (
+        id         TEXT PRIMARY KEY,
+        mentor_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(mentor_id, student_id)
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS mentor_feedback (
+        id          TEXT PRIMARY KEY,
+        assignment_id TEXT NOT NULL REFERENCES mentorship_assignments(id) ON DELETE CASCADE,
+        author_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        feedback    TEXT NOT NULL DEFAULT '',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS learning_goals (
+        id            TEXT PRIMARY KEY,
+        assignment_id TEXT NOT NULL REFERENCES mentorship_assignments(id) ON DELETE CASCADE,
+        title         TEXT NOT NULL,
+        description   TEXT NOT NULL DEFAULT '',
+        status        TEXT NOT NULL DEFAULT 'not_started' CHECK (status IN ('not_started','in_progress','completed')),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title       TEXT NOT NULL,
+        message     TEXT NOT NULL DEFAULT '',
+        read        BOOLEAN NOT NULL DEFAULT false,
+        ref_type    TEXT,
+        ref_id      TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
+    `);
+
+    await client.query('COMMIT');
+    console.log('✓ Database tables initialized');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Failed to initialize database tables:', err.message);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
