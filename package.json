@@ -1,17 +1,26 @@
-
 {
   "name": "skill-connect-mvp",
   "version": "1.0.0",
   "description": "Skill Connect MVP Monorepo",
+  "type": "module",
   "scripts": {
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm install && npm run build"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
 }
-
