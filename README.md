@@ -1,56 +1,69 @@
-# Ministry of Ayush - Industry Partnership Portal
-### National Academia-Industry Collaborative Platform for Skill Mapping, Internships & Placements
+# SkillConnect - Academia-Industry Partnership Portal
+### National Multi-Sector Skills Mapping, Internships & Placements Platform
 
-Developed for the **Smart India Hackathon (SIH)**, this platform bridges the gap between academic institutions (BAMS, BHMS, BNYS, BUMS, BSMS colleges) and leading industry enterprises across all AYUSH streams:
-* **A**yurveda
-* **Y**oga & **N**aturopathy
-* **U**nani
-* **S**iddha
-* **H**omeopathy
-
----
+Developed for bridging the gap between academic institutions and leading industry enterprises across **all major sectors** including technology, healthcare, manufacturing, finance, AYUSH, creative industries, and more.
 
 ## 🌟 Key Features
 
-### 1. Phase 1 - Core User Roles
-* **👨‍⚕️ Student Portal**:
-  * Comprehensive Ayush profile setup with stream specialization (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy).
-  * Interactive standardized **Skill Assessments** with instant clinical badge credentials.
-  * Real-time **Internship Application Tracker** with status pipelines (Applied &rarr; Under Review &rarr; Shortlisted &rarr; Interview Scheduled &rarr; Offered).
-* **🏭 Industry Partner Portal**:
-  * Partner registration with **AYUSH Drug License & GMP Certification** verification.
-  * **Internship & Fellowship Posting Engine** with required skill tag mappings.
-  * **Candidate Shortlisting Drawer** displaying students' degrees, AI match scores, and verified competency matrices.
-  * One-click **Video Interview Scheduler** with auto-generated secure meeting links (Jitsi Meet).
-* **🛡️ Ministry Admin Dashboard**:
-  * Regulatory verification queue to accredit industry partners.
-  * Compliance review workflow to approve internship postings and stipend norms.
-  * Exportable compliance & placement reports.
+### 1. Multi-Industry Support
+Supporting diverse sectors:
+- **AYUSH**: Ayurveda, Yoga & Naturopathy, Unani, Siddha, Homeopathy
+- **Technology**: Software, AI/ML, Web Development, Cloud
+- **Healthcare**: Clinical, Nursing, Pharmacy, Lab Sciences
+- **Manufacturing**: Engineering, Operations, Quality Assurance
+- **Finance & Business**: Accounting, Analytics, Management
+- **Creative Industries**: Design, Media, Entertainment
+- **And More!**
 
-### 2. Phase 2 - Smart Automation
-* **🧠 AI Skill Mapping Engine**:
-  * Semantic keyword & NLP matching between student verified competencies and recruiter prerequisites.
-  * Transparent match score calculation (0–100%) with matching skill badges and gap advisories.
-* **📊 Placement & Demand Analytics**:
-  * Interactive visual charts (built with **Recharts**) showing discipline distribution, industry demand vs certified supply, and placement growth trajectories.
+### 2. Core Functionality
 
-### 3. Phase 3 - Value-Add Capabilities
-* **📹 Live Video Interview Rooms**:
-  * Direct one-click entry into encrypted video rooms for student-recruiter interactions.
-* **📜 Document Verification**:
-  * Degree certificates and state council registrations verified by Ministry protocols.
-* **🔔 Notification Center**:
-  * Real-time alert bell showing application status updates, interview schedules, and new matching internships.
+#### 👨‍⚕️ Student Portal:
+* Comprehensive profile setup with industry/sector specialization
+* Interactive standardized **Skill Assessments** with instant credential badges
+* Real-time **Internship Application Tracker** with status pipelines
+* AI-powered skill gap recommendations
+
+#### 🏭 Industry Partner Portal:
+* Partner registration with credential verification
+* **Internship & Fellowship Posting Engine** with required skill tag mappings
+* **Candidate Shortlisting** with AI match scores
+* One-click **Video Interview Scheduler**
+
+#### 🛡️ Admin Dashboard:
+* Partner regulatory verification queue
+* Compliance review workflow for internship postings
+* Exportable compliance & placement reports
+* Industry analytics and skill-demand dashboards
+
+### 3. Phase 2 - Smart Automation
+* **🧠 AI Skill Mapping Engine**: Semantic matching between student competencies and recruiter needs
+* **📊 Analytics Dashboard**: Interactive charts showing sector distribution, demand vs supply
+
+### 4. Phase 3 - Value-Add Capabilities
+* **📹 Live Video Interview Rooms**
+* **📜 Document Verification**
+* **🔔 Notification Center**
 
 ---
 
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
-* **Node.js**: v18 or higher (v24 tested)
+* **Node.js**: v18 or higher
 * **npm**: v10 or higher
+* **MongoDB**: (Optional) For cloud database integration
 
-### 1. Start Backend Server
+### Environment Setup
+
+1. **Create `.env` file in `server/` directory:**
+```
+PORT=5000
+JWT_SECRET=skillconnect-secure-key-2026
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/skillconnect
+NODE_ENV=development
+```
+
+2. **Start Backend Server**
 ```bash
 cd server
 npm install
@@ -58,7 +71,7 @@ npm run dev
 # Server will run on http://localhost:5000
 ```
 
-### 2. Start Frontend Client
+3. **Start Frontend Client**
 ```bash
 cd client
 npm install
@@ -68,32 +81,66 @@ npm run dev
 
 ---
 
-## ⚡ 1-Click Fast Demo Logins
+## ⚡ Demo Logins
 
-For live evaluation, the login page features quick demo buttons to switch between accounts instantly:
-
-| Role | Demo Email | Demo Password | Purpose |
+| Role | Email | Password | Purpose |
 |---|---|---|---|
-| **Student** | `student@ayush.gov.in` | `ayush123` | BAMS Final Year Candidate (Dr. Ananya Sharma) |
-| **Industry Partner** | `recruiter@dabur.com` | `ayush123` | Lead Recruiter at Dabur R&D Centre |
-| **Ministry Admin** | `admin@ayush.gov.in` | `admin123` | Verification Directorate, Ministry of Ayush |
+| **Student** | `student@skillconnect.in` | `skill123` | Portfolio & Applications |
+| **Industry Partner** | `recruiter@company.com` | `skill123` | Post Opportunities & Hire |
+| **Admin** | `admin@skillconnect.in` | `admin123` | Verification & Analytics |
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 🛠️ Tech Stack
 
 ```
-academia-industry-portal/
+skillconnect-portal/
 ├── client/                     # Vite + React 19 Frontend
 │   ├── src/
 │   │   ├── components/         # Navbar, Footer, ProtectedRoute
-│   │   ├── context/            # AuthContext (state & demo role switcher)
-│   │   ├── pages/              # 9 dedicated pages for Student, Industry & Admin
+│   │   ├── context/            # AuthContext
+│   │   ├── pages/              # Student, Industry, Admin dashboards
 │   │   └── services/           # Axios REST API client
 │   └── package.json
-└── server/                     # Express.js REST API Backend
-    ├── services/               # Ayush Skill Matcher & Semantic Scoring Engine
-    ├── db.js                   # Persistent zero-config data store with Ayush seed dataset
-    ├── server.js               # REST endpoints & JWT authentication
+└── server/                     # Express.js + MongoDB Backend
+    ├── models/                 # MongoDB Schemas (User, Opportunity, Application)
+    ├── services/               # Skill Matcher & AI Engine
+    ├── server.js               # REST endpoints & JWT auth
+    ├── db.js                   # MongoDB connection & initialization
     └── package.json
 ```
+
+---
+
+## 📦 Supported Industries
+
+The platform supports skill matching and internship opportunities across:
+1. **AYUSH** - Traditional Medicine & Wellness
+2. **Technology** - Software, AI/ML, Web Development
+3. **Healthcare** - Clinical, Nursing, Pharmacy
+4. **Engineering** - Mechanical, Civil, Electronics
+5. **Finance** - Accounting, Banking, Analytics
+6. **Business** - Management, HR, Operations
+7. **Creative** - Design, Media, Entertainment
+8. **Education** - Teaching, Research, Content
+9. **Hospitality** - Tourism, Events, Services
+10. **Manufacturing** - Production, Quality, Supply Chain
+
+---
+
+## 🗄️ Database
+
+The platform uses **MongoDB Atlas** for cloud data storage with automatic fallback to local JSON file.
+
+### Collections:
+- `users` - Students, Industry Partners, Admins
+- `opportunities` - Internship/Fellowship postings
+- `applications` - Student applications tracking
+- `assessments` - Standardized skill tests
+- `notifications` - Real-time alerts
+
+---
+
+## 📝 License
+
+This project is developed as an open Academia-Industry collaborative initiative.
