@@ -1,14 +1,7 @@
-import dns from 'dns';
-import pg from 'pg';
+import { Pool } from '@neondatabase/serverless';
 import dotenv from 'dotenv';
 
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
 dotenv.config();
-
-const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   console.error('FATAL: DATABASE_URL environment variable is required. Set it to your Neon PostgreSQL connection string.');
@@ -17,10 +10,6 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
 });
 
 pool.on('error', (err) => {

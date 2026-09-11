@@ -1,8 +1,4 @@
-import dns from 'dns';
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
+import './dns-init.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
